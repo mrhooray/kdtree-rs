@@ -1,0 +1,8 @@
+[package]
+name = "kdtree"
+version = "0.0.0"
+authors = ["mrhooray <ruihu.pvt@gmail.com>"]
+description = "Rust implementation of k-dimensional tree"
+keywords = ["tree", "nearest", "neighbor", "search", "geo"]
+repository = "https://github.com/mrhooray/kdtree-rs"
+license = "MIT"
