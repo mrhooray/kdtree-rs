@@ -1,8 +1,8 @@
 [package]
 name = "kdtree"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["mrhooray <code@mrhooray.com>"]
-description = "Rust implementation of k-dimensional tree"
-keywords = ["tree", "nearest", "neighbor", "search", "geo"]
+description = "K-dimensional tree for Rust(bucket point-region implementation)"
+keywords = ["tree", "nearest", "dimension", "search", "geo"]
 repository = "https://github.com/mrhooray/kdtree-rs"
 license = "MIT"
