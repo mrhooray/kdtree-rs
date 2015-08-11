@@ -3,7 +3,8 @@ use std::collections::BinaryHeap;
 use ::heap_element::HeapElement;
 use ::util;
 
-pub struct KdNode<'a, T: 'a> {
+#[derive(Debug)]
+pub struct KdNode<'a, T: 'a + std::fmt::Debug> {
     // node
     left: Option<*mut KdNode<'a, T>>,
     right: Option<*mut KdNode<'a, T>>,
@@ -21,12 +22,13 @@ pub struct KdNode<'a, T: 'a> {
     bucket: Option<Vec<&'a T>>,
 }
 
+#[derive(Debug)]
 pub enum ErrorKind {
     WrongDimension,
     NonFiniteCoordinate
 }
 
-impl<'a, T: 'a> KdNode<'a, T> {
+impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
     pub fn new(dims: usize) -> KdNode<'a, T> {
         KdNode::new_with_capacity(dims, 2^4)
     }
@@ -62,7 +64,7 @@ impl<'a, T: 'a> KdNode<'a, T> {
                 distance: 0f64,
                 element: self
             });
-            while pending.len() > 0 &&
+            while pending.len() > 0 && num >=1 &&
                 (evaluated.len() < num ||
                  ((pending.peek().unwrap().distance * -1f64) < evaluated.peek().unwrap().distance)) {
                 self.nearest_step(point, num, distance, pending, &mut evaluated);
@@ -137,7 +139,7 @@ impl<'a, T: 'a> KdNode<'a, T> {
         while !curr.is_leaf() {
             curr.extend(point);
             curr.size += 1;
-            if point[curr.split_dimension.unwrap()] > curr.split_value.unwrap() {
+            if point[curr.split_dimension.unwrap()] < curr.split_value.unwrap() {
                 curr = unsafe {&mut *curr.left.unwrap()};
             } else {
                 curr = unsafe {&mut *curr.right.unwrap()};
@@ -179,21 +181,17 @@ impl<'a, T: 'a> KdNode<'a, T> {
                 self.split_value = Some(min + (max - min) / 2f64);
             }
         };
-        let left: *mut KdNode<T> = &mut KdNode::<T>::new_with_capacity(self.dimensions, self.capacity);
-        let right: *mut KdNode<T> = &mut KdNode::<T>::new_with_capacity(self.dimensions, self.capacity);
+        let mut left = Box::new(KdNode::<T>::new_with_capacity(self.dimensions, self.capacity));
+        let mut right = Box::new(KdNode::<T>::new_with_capacity(self.dimensions, self.capacity));
         for i in 0..points.len() {
             if points[i][self.split_dimension.unwrap()] < self.split_value.unwrap() {
-                unsafe {
-                    (*left).add_to_bucket(points[i], bucket[i]);
-                }
+                    left.add_to_bucket(points[i], bucket[i]);
             } else {
-                unsafe {
-                    (*right).add_to_bucket(points[i], bucket[i]);
-                }
+                    right.add_to_bucket(points[i], bucket[i]);
             }
         }
-        self.left = Some(left);
-        self.right = Some(right);
+        self.left = Some(Box::into_raw(left));
+        self.right = Some(Box::into_raw(right));
     }
 
     fn extend(&mut self, point: &[f64]) {
