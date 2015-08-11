@@ -5,3 +5,4 @@ pub mod distance;
 mod heap_element;
 mod util;
 pub use kd_node::KdNode;
+pub use kd_node::ErrorKind;
