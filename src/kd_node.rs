@@ -22,10 +22,11 @@ pub struct KdNode<'a, T: 'a + std::fmt::Debug> {
     bucket: Option<Vec<&'a T>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ErrorKind {
     WrongDimension,
-    NonFiniteCoordinate
+    NonFiniteCoordinate,
+    ZeroCapacity
 }
 
 impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
@@ -49,6 +50,10 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
             points: Some(vec![]),
             bucket: Some(vec![]),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.size
     }
 
     pub fn nearest<F> (&self, point: &[f64], num: usize, distance: &F) -> Result<Vec<(f64, &T)>, ErrorKind>
@@ -131,6 +136,9 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
         }
 
     pub fn add(&mut self, point: &'a [f64], data: &'a T) -> Result<(), ErrorKind> {
+        if self.capacity == 0 {
+            return Err(ErrorKind::ZeroCapacity);
+        }
         match self.check_point(point) {
             Err(err) => return Err(err),
             Ok(_) => {}
@@ -156,7 +164,7 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
         points.push(point);
         bucket.push(data);
         self.size += 1;
-        if self.size >= self.capacity {
+        if self.size > self.capacity {
             self.split(points, bucket);
         } else {
             self.points = Some(points);
@@ -174,7 +182,11 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
             }
         }
         match self.split_dimension {
-            None => return,
+            None => {
+                self.points = Some(points);
+                self.bucket = Some(bucket);
+                return;
+            },
             Some(dim) => {
                 let min = self.min_bounds[dim];
                 let max = self.max_bounds[dim];
