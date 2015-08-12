@@ -22,9 +22,9 @@ fn bench_add_at_1k_3d_points(b: &mut Bencher) {
     }
     let points = &points[..];
     for i in 0..points.len() {
-        kd_node.add(&points[i].0, &points[i].1).unwrap();
+        kd_node.add(&points[i].0, points[i].1).unwrap();
     }
-    b.iter(|| kd_node.add(&point.0, &point.1).unwrap());
+    b.iter(|| kd_node.add(&point.0, point.1).unwrap());
 }
 
 #[bench]
@@ -38,7 +38,7 @@ fn bench_nearest_at_1k_3d_points(b: &mut Bencher) {
     }
     let points = &points[..];
     for i in 0..points.len() {
-        kd_node.add(&points[i].0, &points[i].1).unwrap();
+        kd_node.add(&points[i].0, points[i].1).unwrap();
     }
     b.iter(|| kd_node.nearest(&point.0, 8, &square_euclidean).unwrap());
 }
