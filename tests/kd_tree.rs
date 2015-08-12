@@ -4,26 +4,49 @@ use kdtree::KdTree;
 use kdtree::ErrorKind;
 use kdtree::distance::square_euclidean;
 
-static POINT_A: ([f64; 2], f64) = ([0f64, 0f64], 0f64);
-static POINT_B: ([f64; 2], f64) = ([1f64, 1f64], 1f64);
-static POINT_C: ([f64; 2], f64) = ([2f64, 2f64], 2f64);
-static POINT_D: ([f64; 2], f64) = ([3f64, 3f64], 3f64);
+static POINT_A: ([f64; 2], usize) = ([0f64, 0f64], 0);
+static POINT_B: ([f64; 2], usize) = ([1f64, 1f64], 1);
+static POINT_C: ([f64; 2], usize) = ([2f64, 2f64], 2);
+static POINT_D: ([f64; 2], usize) = ([3f64, 3f64], 3);
 
 #[test]
 fn it_works() {
-    let mut kd_tree = KdTree::new_with_capacity(2, 2);
+    let dimensions = 2;
+    let capacity_per_node = 2;
+    let mut kd_tree = KdTree::new_with_capacity(dimensions, capacity_per_node);
     kd_tree.add(&POINT_A.0, &POINT_A.1).unwrap();
     kd_tree.add(&POINT_B.0, &POINT_B.1).unwrap();
     kd_tree.add(&POINT_C.0, &POINT_C.1).unwrap();
     kd_tree.add(&POINT_D.0, &POINT_D.1).unwrap();
     assert_eq!(kd_tree.size(), 4);
-    assert_eq!(kd_tree.nearest(&POINT_A.0, 0, &square_euclidean).unwrap(), vec![]);
-    assert_eq!(kd_tree.nearest(&POINT_A.0, 1, &square_euclidean).unwrap(), vec![(0f64, &0f64)]);
-    assert_eq!(kd_tree.nearest(&POINT_A.0, 2, &square_euclidean).unwrap(), vec![(0f64, &0f64), (2f64, &1f64)]);
-    assert_eq!(kd_tree.nearest(&POINT_A.0, 3, &square_euclidean).unwrap(), vec![(0f64, &0f64), (2f64, &1f64), (8f64, &2f64)]);
-    assert_eq!(kd_tree.nearest(&POINT_A.0, 4, &square_euclidean).unwrap(), vec![(0f64, &0f64), (2f64, &1f64), (8f64, &2f64), (18f64, &3f64)]);
-    assert_eq!(kd_tree.nearest(&POINT_A.0, 5, &square_euclidean).unwrap(), vec![(0f64, &0f64), (2f64, &1f64), (8f64, &2f64), (18f64, &3f64)]);
-    assert_eq!(kd_tree.nearest(&POINT_B.0, 4, &square_euclidean).unwrap(), vec![(0f64, &1f64), (2f64, &0f64), (2f64, &2f64), (8f64, &3f64)]);
+    assert_eq!(
+        kd_tree.nearest(&POINT_A.0, 0, &square_euclidean).unwrap(),
+        vec![]
+        );
+    assert_eq!(
+        kd_tree.nearest(&POINT_A.0, 1, &square_euclidean).unwrap(),
+        vec![(0f64, &0)]
+        );
+    assert_eq!(
+        kd_tree.nearest(&POINT_A.0, 2, &square_euclidean).unwrap(),
+        vec![(0f64, &0), (2f64, &1)]
+        );
+    assert_eq!(
+        kd_tree.nearest(&POINT_A.0, 3, &square_euclidean).unwrap(),
+        vec![(0f64, &0), (2f64, &1), (8f64, &2)]
+        );
+    assert_eq!(
+        kd_tree.nearest(&POINT_A.0, 4, &square_euclidean).unwrap(),
+        vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
+        );
+    assert_eq!(
+        kd_tree.nearest(&POINT_A.0, 5, &square_euclidean).unwrap(),
+        vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
+        );
+    assert_eq!(
+        kd_tree.nearest(&POINT_B.0, 4, &square_euclidean).unwrap(),
+        vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
+        );
 }
 
 #[test]
