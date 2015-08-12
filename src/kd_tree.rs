@@ -4,10 +4,10 @@ use ::heap_element::HeapElement;
 use ::util;
 
 #[derive(Debug)]
-pub struct KdNode<'a, T: 'a + std::fmt::Debug> {
+pub struct KdTree<'a, T: 'a + std::fmt::Debug> {
     // node
-    left: Option<*mut KdNode<'a, T>>,
-    right: Option<*mut KdNode<'a, T>>,
+    left: Option<*mut KdTree<'a, T>>,
+    right: Option<*mut KdTree<'a, T>>,
     // common
     dimensions: usize,
     capacity: usize,
@@ -29,15 +29,15 @@ pub enum ErrorKind {
     ZeroCapacity
 }
 
-impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
-    pub fn new(dims: usize) -> KdNode<'a, T> {
-        KdNode::new_with_capacity(dims, 2^4)
+impl<'a, T: 'a + std::fmt::Debug> KdTree<'a, T> {
+    pub fn new(dims: usize) -> KdTree<'a, T> {
+        KdTree::new_with_capacity(dims, 2^4)
     }
 
-    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdNode<'a, T> {
+    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdTree<'a, T> {
         let min_bounds = vec![std::f64::NAN; dimensions];
         let max_bounds = vec![std::f64::NAN; dimensions];
-        KdNode {
+        KdTree {
             left: None,
             right : None,
             dimensions: dimensions,
@@ -52,7 +52,7 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub fn size(&self) -> usize {
         self.size
     }
 
@@ -62,7 +62,7 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
                 Err(err) => return Err(err),
                 Ok(_) => {}
             };
-            let pending = &mut BinaryHeap::<HeapElement<&KdNode<T>>>::new();
+            let pending = &mut BinaryHeap::<HeapElement<&KdTree<T>>>::new();
             let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
             let num = std::cmp::min(num, self.size);
             pending.push(HeapElement {
@@ -87,7 +87,7 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
         }
 
     fn nearest_step<F> (&self, point: &[f64], num: usize, distance: &F,
-                        pending: &mut BinaryHeap<HeapElement<&KdNode<'a, T>>>,
+                        pending: &mut BinaryHeap<HeapElement<&KdTree<'a, T>>>,
                         evaluated: &mut BinaryHeap<HeapElement<&'a T>>)
         where F: Fn(&[f64], &[f64]) -> f64 {
             let curr = pending.pop();
@@ -193,8 +193,8 @@ impl<'a, T: 'a + std::fmt::Debug> KdNode<'a, T> {
                 self.split_value = Some(min + (max - min) / 2f64);
             }
         };
-        let mut left = Box::new(KdNode::<T>::new_with_capacity(self.dimensions, self.capacity));
-        let mut right = Box::new(KdNode::<T>::new_with_capacity(self.dimensions, self.capacity));
+        let mut left = Box::new(KdTree::<T>::new_with_capacity(self.dimensions, self.capacity));
+        let mut right = Box::new(KdTree::<T>::new_with_capacity(self.dimensions, self.capacity));
         for i in 0..points.len() {
             if points[i][self.split_dimension.unwrap()] < self.split_value.unwrap() {
                     left.add_to_bucket(points[i], bucket[i]);
