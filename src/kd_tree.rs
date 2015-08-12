@@ -4,7 +4,7 @@ use ::heap_element::HeapElement;
 use ::util;
 
 #[derive(Debug)]
-pub struct KdTree<'a, T: 'a + std::fmt::Debug> {
+pub struct KdTree<'a, T: 'a> {
     // node
     left: Option<*mut KdTree<'a, T>>,
     right: Option<*mut KdTree<'a, T>>,
@@ -29,7 +29,7 @@ pub enum ErrorKind {
     ZeroCapacity
 }
 
-impl<'a, T: 'a + std::fmt::Debug> KdTree<'a, T> {
+impl<'a, T: 'a> KdTree<'a, T> {
     pub fn new(dims: usize) -> KdTree<'a, T> {
         KdTree::new_with_capacity(dims, 2^4)
     }
