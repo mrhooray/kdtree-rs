@@ -6,3 +6,6 @@ description = "K-dimensional tree for Rust(bucket point-region implementation)"
 keywords = ["tree", "nearest", "dimension", "search", "geo"]
 repository = "https://github.com/mrhooray/kdtree-rs"
 license = "MIT"
+
+[dev-dependencies]
+rand = "~0.3.9"
