@@ -12,7 +12,7 @@ fn rand_f64() -> f64 {
 }
 
 #[bench]
-fn bench_add(b: &mut Bencher) {
+fn bench_add_at_1k_3d_points(b: &mut Bencher) {
     let len = 1000u32;
     let point = ([rand_f64(), rand_f64(), rand_f64()], rand_f64());
     let mut points = vec![];
@@ -28,7 +28,7 @@ fn bench_add(b: &mut Bencher) {
 }
 
 #[bench]
-fn bench_nearest(b: &mut Bencher) {
+fn bench_nearest_at_1k_3d_points(b: &mut Bencher) {
     let len = 1000u32;
     let point = ([rand_f64(), rand_f64(), rand_f64()], rand_f64());
     let mut points = vec![];
