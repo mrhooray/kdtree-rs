@@ -15,10 +15,10 @@
 //! let dimensions = 2;
 //! let mut kd_tree = KdTree::new(dimensions);
 //!
-//! kd_tree.add(&a.0, &a.1).unwrap();
-//! kd_tree.add(&b.0, &b.1).unwrap();
-//! kd_tree.add(&c.0, &c.1).unwrap();
-//! kd_tree.add(&d.0, &d.1).unwrap();
+//! kd_tree.add(&a.0, a.1).unwrap();
+//! kd_tree.add(&b.0, b.1).unwrap();
+//! kd_tree.add(&c.0, c.1).unwrap();
+//! kd_tree.add(&d.0, d.1).unwrap();
 //!
 //! assert_eq!(kd_tree.size(), 4);
 //! assert_eq!(
