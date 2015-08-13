@@ -1,5 +1,5 @@
 # kdtree [![Build Status](https://travis-ci.org/mrhooray/kdtree-rs.svg?branch=master)](https://travis-ci.org/mrhooray/kdtree-rs)
-> K-dimensional tree for Rust(bucket point-region implementation)
+> K-dimensional tree for Rust
 
 * [Crate](https://crates.io/crates/kdtree)
 * [Documentation](http://mrhooray.github.io/kdtree-rs/kdtree/index.html)
@@ -11,12 +11,7 @@
 Add `kdtree` to `Cargo.toml`
 ```toml
 [dependencies]
-kdtree = "~0.1.0"
-```
-or
-```toml
-[dependencies.kdtree]
-git = "https://github.com/mrhooray/kdtree-rs"
+kdtree = "~0.2.0"
 ```
 
 ```rust
