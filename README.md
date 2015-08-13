@@ -14,6 +14,7 @@ Add `kdtree` to `Cargo.toml`
 kdtree = "~0.2.0"
 ```
 
+Add points to kdtree and query nearest n points with distance function
 ```rust
 use kdtree::KdTree;
 use kdtree::ErrorKind;
