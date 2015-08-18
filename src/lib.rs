@@ -51,7 +51,6 @@
 //!     );
 //! ```
 
-#![feature(box_raw)]
 #[allow(raw_pointer_derive)]
 pub mod kdtree;
 pub mod distance;
