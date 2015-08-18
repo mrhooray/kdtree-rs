@@ -204,8 +204,8 @@ impl<'a, T> KdTree<'a, T> {
                     right.add_to_bucket(point, data);
             }
         }
-        self.left = Some(Box::into_raw(left));
-        self.right = Some(Box::into_raw(right));
+        self.left = Some(unsafe {std::mem::transmute(left)});
+        self.right = Some(unsafe {std::mem::transmute(right)});
     }
 
     fn extend(&mut self, point: &[f64]) {
