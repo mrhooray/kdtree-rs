@@ -2,7 +2,7 @@
 name = "kdtree"
 version = "0.2.1"
 authors = ["mrhooray <ruihu.pvt@gmail.com>"]
-description = "K-dimensional tree for Rust"
+description = "K-dimensional tree in Rust for fast geospatial indexing"
 keywords = ["tree", "nearest", "dimension", "search", "geo"]
 readme = "README.md"
 repository = "https://github.com/mrhooray/kdtree-rs"
