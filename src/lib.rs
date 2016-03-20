@@ -51,7 +51,6 @@
 //!     );
 //! ```
 
-#[allow(raw_pointer_derive)]
 pub mod kdtree;
 pub mod distance;
 mod heap_element;
