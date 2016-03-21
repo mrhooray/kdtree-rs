@@ -1,7 +1,6 @@
 pub fn squared_euclidean(a: &[f64], b: &[f64]) -> f64 {
-    let mut dist = 0f64;
-    for i in 0..a.len() {
-        dist += (a[i] - b[i]) * (a[i] - b[i]);
-    }
-    return dist;
+    debug_assert!(a.len() == b.len());
+    a.iter().zip(b.iter())
+            .map(|(x, y)| (x - y) * (x - y))
+            .fold(0f64, ::std::ops::Add::add)
 }
