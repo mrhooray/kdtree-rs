@@ -7,19 +7,13 @@ pub struct HeapElement<T> {
 
 impl<T> Ord for HeapElement<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.distance < other.distance {
-            return Ordering::Less;
-        } else if self.distance > other.distance {
-            return Ordering::Greater;
-        } else {
-            return Ordering::Equal;
-        }
+        self.partial_cmp(other).unwrap_or(Ordering::Equal)
     }
 }
 
 impl<T> PartialOrd for HeapElement<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+        self.distance.partial_cmp(&other.distance)
     }
 }
 

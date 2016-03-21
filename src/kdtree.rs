@@ -35,8 +35,8 @@ impl<'a, T> KdTree<'a, T> {
     }
 
     pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdTree<'a, T> {
-        let min_bounds = vec![std::f64::NAN; dimensions];
-        let max_bounds = vec![std::f64::NAN; dimensions];
+        let min_bounds = vec![std::f64::INFINITY; dimensions];
+        let max_bounds = vec![std::f64::NEG_INFINITY; dimensions];
         KdTree {
             left: None,
             right : None,
@@ -58,10 +58,9 @@ impl<'a, T> KdTree<'a, T> {
 
     pub fn nearest<F> (&self, point: &[f64], num: usize, distance: &F) -> Result<Vec<(f64, &T)>, ErrorKind>
         where F: Fn(&[f64], &[f64]) -> f64 {
-            match self.check_point(point) {
-                Err(err) => return Err(err),
-                Ok(_) => {}
-            };
+            if let Err(err) = self.check_point(point) {
+                return Err(err)
+            }
             let pending = &mut BinaryHeap::<HeapElement<&KdTree<T>>>::new();
             let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
             let num = std::cmp::min(num, self.size);
@@ -69,9 +68,9 @@ impl<'a, T> KdTree<'a, T> {
                 distance: 0f64,
                 element: self
             });
-            while pending.len() > 0 && num >=1 &&
+            while !pending.is_empty() && num > 0 &&
                 (evaluated.len() < num ||
-                 ((pending.peek().unwrap().distance * -1f64) < evaluated.peek().unwrap().distance)) {
+                 (-pending.peek().unwrap().distance < evaluated.peek().unwrap().distance)) {
                 self.nearest_step(point, num, distance, pending, &mut evaluated);
             }
             let mut result = vec![];
@@ -139,10 +138,9 @@ impl<'a, T> KdTree<'a, T> {
         if self.capacity == 0 {
             return Err(ErrorKind::ZeroCapacity);
         }
-        match self.check_point(point) {
-            Err(err) => return Err(err),
-            Ok(_) => {}
-        };
+        if let Err(err) = self.check_point(point) {
+            return Err(err)
+        }
         let mut curr = &mut *self;
         while !curr.is_leaf() {
             curr.extend(point);
@@ -195,13 +193,13 @@ impl<'a, T> KdTree<'a, T> {
         };
         let mut left = Box::new(KdTree::<T>::new_with_capacity(self.dimensions, self.capacity));
         let mut right = Box::new(KdTree::<T>::new_with_capacity(self.dimensions, self.capacity));
-        while points.len() > 0 {
+        while !points.is_empty() {
             let point = points.swap_remove(0);
             let data = bucket.swap_remove(0);
             if point[self.split_dimension.unwrap()] < self.split_value.unwrap() {
-                    left.add_to_bucket(point, data);
+                left.add_to_bucket(point, data);
             } else {
-                    right.add_to_bucket(point, data);
+                right.add_to_bucket(point, data);
             }
         }
         self.left = Some(unsafe {std::mem::transmute(left)});
@@ -209,13 +207,12 @@ impl<'a, T> KdTree<'a, T> {
     }
 
     fn extend(&mut self, point: &[f64]) {
-        for dim in 0..self.dimensions {
-            if self.min_bounds[dim].is_nan() || self.min_bounds[dim] > point[dim] {
-                self.min_bounds[dim] = point[dim];
-            }
-            if self.max_bounds[dim].is_nan() || self.max_bounds[dim] < point[dim] {
-                self.max_bounds[dim] = point[dim];
-            }
+        let (mut i, mut a, mut d) = 
+            (self.min_bounds.iter_mut(), self.max_bounds.iter_mut(), point.iter());
+        
+        while let (Some(l), Some(h), Some(v)) = (i.next(), a.next(), d.next()) {
+            if v < l { *l = *v }
+            if v > h { *h = *v }
         }
     }
 
