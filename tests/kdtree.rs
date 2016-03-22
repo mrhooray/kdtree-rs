@@ -93,7 +93,7 @@ fn handles_singularity() {
 }
 
 #[test]
-fn drops_correctly() {
+fn handles_drops_correctly() {
     use std::ops::Drop;
     use std::sync::{ Arc, Mutex };
     
@@ -116,15 +116,13 @@ fn drops_correctly() {
     {
         // Build a kd tree
         let dimensions = 2;
-        let capacity_per_node = 2;
+        let capacity_per_node = 1;
         let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
         
         kdtree.add(&item1.0, item1.1).unwrap();
         kdtree.add(&item2.0, item2.1).unwrap();
         kdtree.add(&item3.0, item3.1).unwrap();
         kdtree.add(&item4.0, item4.1).unwrap();
-
-        assert_eq!(kdtree.size(), 4);
         
         // Pre-drop check
         assert_eq!(*drop_counter.lock().unwrap(), 0);
