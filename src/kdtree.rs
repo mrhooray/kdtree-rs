@@ -1,4 +1,5 @@
 use std;
+use std::ops::Drop;
 use std::collections::BinaryHeap;
 use ::heap_element::HeapElement;
 use ::util;
@@ -237,3 +238,17 @@ impl<'a, T> KdTree<'a, T> {
         Ok(())
     }
 }
+
+impl<'a, T> Drop for KdTree<'a, T> {
+    fn drop(&mut self) {
+        // Clean up raw pointers by transmuting them back into boxes and allowing them to be automatically dropped
+        if let Some(left) = self.left {
+            let _: Box<KdTree<'a, T>> = unsafe { std::mem::transmute(left) };
+            self.left = None;
+        }
+        if let Some(right) = self.right {
+            let _: Box<KdTree<'a, T>> = unsafe { std::mem::transmute(right) };
+            self.right = None;
+        }
+    }
+} 
