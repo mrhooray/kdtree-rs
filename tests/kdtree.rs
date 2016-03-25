@@ -91,3 +91,43 @@ fn handles_singularity() {
     kdtree.add(&POINT_C.0, POINT_C.1).unwrap();
     assert_eq!(kdtree.size(), 9);
 }
+
+#[test]
+fn handles_drops_correctly() {
+    use std::ops::Drop;
+    use std::sync::{ Arc, Mutex };
+    
+    // Mock up a structure to keep track of Drops
+    struct Test(Arc<Mutex<i32>>);
+    impl Drop for Test {
+        fn drop(&mut self) {
+            let mut drop_counter = self.0.lock().unwrap();
+            *drop_counter += 1;
+        }
+    }
+    
+    let drop_counter = Arc::new(Mutex::new(0));
+
+    let item1 = ([0f64, 0f64], Test(drop_counter.clone()));
+    let item2 = ([1f64, 1f64], Test(drop_counter.clone()));
+    let item3 = ([2f64, 2f64], Test(drop_counter.clone()));
+    let item4 = ([3f64, 3f64], Test(drop_counter.clone()));
+    
+    {
+        // Build a kd tree
+        let dimensions = 2;
+        let capacity_per_node = 1;
+        let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
+        
+        kdtree.add(&item1.0, item1.1).unwrap();
+        kdtree.add(&item2.0, item2.1).unwrap();
+        kdtree.add(&item3.0, item3.1).unwrap();
+        kdtree.add(&item4.0, item4.1).unwrap();
+        
+        // Pre-drop check
+        assert_eq!(*drop_counter.lock().unwrap(), 0);
+    }
+    
+    // Post-drop check
+    assert_eq!(*drop_counter.lock().unwrap(), 4);
+}

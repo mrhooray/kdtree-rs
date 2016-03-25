@@ -1,4 +1,5 @@
 use std;
+use std::ops::Drop;
 use std::collections::BinaryHeap;
 use ::heap_element::HeapElement;
 use ::util;
@@ -202,8 +203,8 @@ impl<'a, T> KdTree<'a, T> {
                 right.add_to_bucket(point, data);
             }
         }
-        self.left = Some(unsafe {std::mem::transmute(left)});
-        self.right = Some(unsafe {std::mem::transmute(right)});
+        self.left = Some(Box::into_raw(left));
+        self.right = Some(Box::into_raw(right));
     }
 
     fn extend(&mut self, point: &[f64]) {
@@ -234,3 +235,17 @@ impl<'a, T> KdTree<'a, T> {
         Ok(())
     }
 }
+
+impl<'a, T> Drop for KdTree<'a, T> {
+    fn drop(&mut self) {
+        // Clean up raw pointers by converting them back into boxes and allowing them to be automatically dropped
+        if let Some(left) = self.left {
+            let _ = unsafe { Box::from_raw(left) };
+            self.left = None;
+        }
+        if let Some(right) = self.right {
+            let _= unsafe { Box::from_raw(right) };
+            self.right = None;
+        }
+    }
+} 
