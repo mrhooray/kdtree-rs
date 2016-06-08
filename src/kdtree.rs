@@ -27,12 +27,12 @@ pub struct KdTree<'a, T> {
 pub enum ErrorKind {
     WrongDimension,
     NonFiniteCoordinate,
-    ZeroCapacity
+    ZeroCapacity,
 }
 
 impl<'a, T> KdTree<'a, T> {
     pub fn new(dims: usize) -> KdTree<'a, T> {
-        KdTree::new_with_capacity(dims, 2^4)
+        KdTree::new_with_capacity(dims, 2 ^ 4)
     }
 
     pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdTree<'a, T> {
@@ -40,14 +40,14 @@ impl<'a, T> KdTree<'a, T> {
         let max_bounds = vec![std::f64::NEG_INFINITY; dimensions];
         KdTree {
             left: None,
-            right : None,
+            right: None,
             dimensions: dimensions,
             capacity: capacity,
             size: 0,
             min_bounds: min_bounds.into_boxed_slice(),
             max_bounds: max_bounds.into_boxed_slice(),
-            split_value : None,
-            split_dimension : None,
+            split_value: None,
+            split_dimension: None,
             points: Some(vec![]),
             bucket: Some(vec![]),
         }
@@ -57,99 +57,109 @@ impl<'a, T> KdTree<'a, T> {
         self.size
     }
 
-    pub fn nearest<F> (&self, point: &[f64], num: usize, distance: &F) -> Result<Vec<(f64, &T)>, ErrorKind>
-        where F: Fn(&[f64], &[f64]) -> f64 {
-            if let Err(err) = self.check_point(point) {
-                return Err(err)
-            }
-            let pending = &mut BinaryHeap::<HeapElement<&KdTree<T>>>::new();
-            let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
-            let num = std::cmp::min(num, self.size);
-            pending.push(HeapElement {
-                distance: 0f64,
-                element: self
-            });
-            while !pending.is_empty() && num > 0 &&
-                (evaluated.len() < num ||
-                 (-pending.peek().unwrap().distance < evaluated.peek().unwrap().distance)) {
-                self.nearest_step(point, num, distance, pending, &mut evaluated);
-            }
-            let mut result = vec![];
-            loop {
-                match evaluated.pop() {
-                    None => {
-                        result.reverse();
-                        return Ok(result);
-                    },
-                    Some(e) => result.push((e.distance, e.element)),
+    pub fn nearest<F>(&self,
+                      point: &[f64],
+                      num: usize,
+                      distance: &F)
+                      -> Result<Vec<(f64, &T)>, ErrorKind>
+        where F: Fn(&[f64], &[f64]) -> f64
+    {
+        if let Err(err) = self.check_point(point) {
+            return Err(err);
+        }
+        let pending = &mut BinaryHeap::<HeapElement<&KdTree<T>>>::new();
+        let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
+        let num = std::cmp::min(num, self.size);
+        pending.push(HeapElement {
+            distance: 0f64,
+            element: self,
+        });
+        while !pending.is_empty() && num > 0 &&
+              (evaluated.len() < num ||
+               (-pending.peek().unwrap().distance < evaluated.peek().unwrap().distance)) {
+            self.nearest_step(point, num, distance, pending, &mut evaluated);
+        }
+        let mut result = vec![];
+        loop {
+            match evaluated.pop() {
+                None => {
+                    result.reverse();
+                    return Ok(result);
                 }
+                Some(e) => result.push((e.distance, e.element)),
+            }
+        }
+    }
+
+    fn nearest_step<'b, F>(&self,
+                           point: &[f64],
+                           num: usize,
+                           distance: &F,
+                           pending: &mut BinaryHeap<HeapElement<&'b KdTree<T>>>,
+                           evaluated: &mut BinaryHeap<HeapElement<&'b T>>)
+        where F: Fn(&[f64], &[f64]) -> f64
+    {
+        let curr = pending.pop();
+
+        if curr.is_none() {
+            return;
+        }
+
+        let mut curr = &*curr.unwrap().element;
+
+        while !curr.is_leaf() {
+            let candidate;
+            if point[curr.split_dimension.unwrap()] > curr.split_value.unwrap() {
+                candidate = unsafe { &*curr.left.unwrap() };
+                curr = unsafe { &*curr.right.unwrap() };
+            } else {
+                candidate = unsafe { &*curr.right.unwrap() };
+                curr = unsafe { &*curr.left.unwrap() };
+            }
+            let candidate_to_space =
+                util::distance_to_space(point, &*curr.min_bounds, &*curr.max_bounds, distance);
+            if evaluated.len() < num || candidate_to_space <= evaluated.peek().unwrap().distance {
+                pending.push(HeapElement {
+                    distance: candidate_to_space * -1f64,
+                    element: candidate,
+                });
             }
         }
 
-    fn nearest_step<'b, F> (&self, point: &[f64], num: usize, distance: &F,
-                        pending: &mut BinaryHeap<HeapElement<&'b KdTree<T>>>,
-                        evaluated: &mut BinaryHeap<HeapElement<&'b T>>)
-        where F: Fn(&[f64], &[f64]) -> f64 {
-            let curr = pending.pop();
-
-            if curr.is_none() {
-                return;
-            }
-
-            let mut curr = &*curr.unwrap().element;
-
-            while !curr.is_leaf() {
-                let candidate;
-                if point[curr.split_dimension.unwrap()] > curr.split_value.unwrap() {
-                    candidate = unsafe {&*curr.left.unwrap()};
-                    curr = unsafe {&*curr.right.unwrap()};
-                } else {
-                    candidate = unsafe {&*curr.right.unwrap()};
-                    curr = unsafe {&*curr.left.unwrap()};
-                }
-                let candidate_to_space= util::distance_to_space(point, &*curr.min_bounds, &*curr.max_bounds, distance);
-                if evaluated.len() < num || candidate_to_space<= evaluated.peek().unwrap().distance {
-                    pending.push(HeapElement {
-                        distance: candidate_to_space* -1f64,
-                        element: candidate
-                    });
-                }
-            }
-
-            for i in 0..curr.size {
-                let p = curr.points.as_ref().unwrap()[i];
-                let d = &curr.bucket.as_ref().unwrap()[i];
-                let p_to_point = distance(p, point);
-                if evaluated.len() < num {
-                    evaluated.push(HeapElement {
-                        distance: p_to_point,
-                        element: d
-                    });
-                } else if p_to_point < evaluated.peek().unwrap().distance {
-                    evaluated.pop();
-                    evaluated.push(HeapElement {
-                        distance: p_to_point,
-                        element: d
-                    });
-                }
+        for i in 0..curr.size {
+            let p = curr.points.as_ref().unwrap()[i];
+            let d = &curr.bucket.as_ref().unwrap()[i];
+            let p_to_point = distance(p, point);
+            if evaluated.len() < num {
+                evaluated.push(HeapElement {
+                    distance: p_to_point,
+                    element: d,
+                });
+            } else if p_to_point < evaluated.peek().unwrap().distance {
+                evaluated.pop();
+                evaluated.push(HeapElement {
+                    distance: p_to_point,
+                    element: d,
+                });
             }
         }
+    }
 
     pub fn add(&mut self, point: &'a [f64], data: T) -> Result<(), ErrorKind> {
         if self.capacity == 0 {
             return Err(ErrorKind::ZeroCapacity);
         }
         if let Err(err) = self.check_point(point) {
-            return Err(err)
+            return Err(err);
         }
         let mut curr = &mut *self;
         while !curr.is_leaf() {
             curr.extend(point);
             curr.size += 1;
             if point[curr.split_dimension.unwrap()] < curr.split_value.unwrap() {
-                curr = unsafe {&mut *curr.left.unwrap()};
+                curr = unsafe { &mut *curr.left.unwrap() };
             } else {
-                curr = unsafe {&mut *curr.right.unwrap()};
+                curr = unsafe { &mut *curr.right.unwrap() };
             }
         }
         curr.add_to_bucket(point, data);
@@ -185,7 +195,7 @@ impl<'a, T> KdTree<'a, T> {
                 self.points = Some(points);
                 self.bucket = Some(bucket);
                 return;
-            },
+            }
             Some(dim) => {
                 let min = self.min_bounds[dim];
                 let max = self.max_bounds[dim];
@@ -208,19 +218,22 @@ impl<'a, T> KdTree<'a, T> {
     }
 
     fn extend(&mut self, point: &[f64]) {
-        let (mut i, mut a, mut d) = 
+        let (mut i, mut a, mut d) =
             (self.min_bounds.iter_mut(), self.max_bounds.iter_mut(), point.iter());
-        
+
         while let (Some(l), Some(h), Some(v)) = (i.next(), a.next(), d.next()) {
-            if v < l { *l = *v }
-            if v > h { *h = *v }
+            if v < l {
+                *l = *v
+            }
+            if v > h {
+                *h = *v
+            }
         }
     }
 
     fn is_leaf(&self) -> bool {
-        self.bucket.is_some() && self.points.is_some() &&
-            self.split_value.is_none() && self.split_dimension.is_none() &&
-            self.left.is_none() && self.right.is_none()
+        self.bucket.is_some() && self.points.is_some() && self.split_value.is_none() &&
+        self.split_dimension.is_none() && self.left.is_none() && self.right.is_none()
     }
 
     fn check_point(&self, point: &[f64]) -> Result<(), ErrorKind> {
@@ -238,14 +251,15 @@ impl<'a, T> KdTree<'a, T> {
 
 impl<'a, T> Drop for KdTree<'a, T> {
     fn drop(&mut self) {
-        // Clean up raw pointers by converting them back into boxes and allowing them to be automatically dropped
+        // Clean up raw pointers by converting them back into boxes
+        // and allowing them to be automatically dropped
         if let Some(left) = self.left {
             let _ = unsafe { Box::from_raw(left) };
             self.left = None;
         }
         if let Some(right) = self.right {
-            let _= unsafe { Box::from_raw(right) };
+            let _ = unsafe { Box::from_raw(right) };
             self.right = None;
         }
     }
-} 
+}
