@@ -1,5 +1,4 @@
 use std;
-use std::ops::Drop;
 use std::collections::BinaryHeap;
 use ::heap_element::HeapElement;
 use ::util;
@@ -7,8 +6,8 @@ use ::util;
 #[derive(Debug)]
 pub struct KdTree<'a, T> {
     // node
-    left: Option<*mut KdTree<'a, T>>,
-    right: Option<*mut KdTree<'a, T>>,
+    left: Option<Box<KdTree<'a, T>>>,
+    right: Option<Box<KdTree<'a, T>>>,
     // common
     dimensions: usize,
     capacity: usize,
@@ -110,18 +109,18 @@ impl<'a, T> KdTree<'a, T> {
         while !curr.is_leaf() {
             let candidate;
             if point[curr.split_dimension.unwrap()] > curr.split_value.unwrap() {
-                candidate = unsafe { &*curr.left.unwrap() };
-                curr = unsafe { &*curr.right.unwrap() };
+                candidate = curr.left.as_ref().unwrap();
+                curr = curr.right.as_ref().unwrap();
             } else {
-                candidate = unsafe { &*curr.right.unwrap() };
-                curr = unsafe { &*curr.left.unwrap() };
+                candidate = curr.right.as_ref().unwrap();
+                curr = curr.left.as_ref().unwrap();
             }
             let candidate_to_space =
                 util::distance_to_space(point, &*curr.min_bounds, &*curr.max_bounds, distance);
             if evaluated.len() < num || candidate_to_space <= evaluated.peek().unwrap().distance {
                 pending.push(HeapElement {
                     distance: candidate_to_space * -1f64,
-                    element: candidate,
+                    element: &**candidate,
                 });
             }
         }
@@ -152,19 +151,24 @@ impl<'a, T> KdTree<'a, T> {
         if let Err(err) = self.check_point(point) {
             return Err(err);
         }
-        let mut curr = &mut *self;
-        while !curr.is_leaf() {
-            curr.extend(point);
-            curr.size += 1;
-            if point[curr.split_dimension.unwrap()] < curr.split_value.unwrap() {
-                curr = unsafe { &mut *curr.left.unwrap() };
-            } else {
-                curr = unsafe { &mut *curr.right.unwrap() };
-            }
-        }
-        curr.add_to_bucket(point, data);
-        Ok(())
+        self.add_unchecked(point, data)
     }
+
+    fn add_unchecked(&mut self, point: &'a [f64], data: T) -> Result<(), ErrorKind> {
+        if self.is_leaf() {
+            self.add_to_bucket(point, data);
+            return Ok(());
+        }
+        self.extend(point);
+        self.size += 1;
+        let next = if point[self.split_dimension.unwrap()] < self.split_value.unwrap() {
+            self.left.as_mut()
+        } else {
+            self.right.as_mut()
+        };
+        next.unwrap().add_unchecked(point, data)
+    }
+
 
     fn add_to_bucket(&mut self, point: &'a [f64], data: T) {
         self.extend(point);
@@ -213,8 +217,8 @@ impl<'a, T> KdTree<'a, T> {
                 right.add_to_bucket(point, data);
             }
         }
-        self.left = Some(Box::into_raw(left));
-        self.right = Some(Box::into_raw(right));
+        self.left = Some(left);
+        self.right = Some(right);
     }
 
     fn extend(&mut self, point: &[f64]) {
@@ -246,20 +250,5 @@ impl<'a, T> KdTree<'a, T> {
             }
         }
         Ok(())
-    }
-}
-
-impl<'a, T> Drop for KdTree<'a, T> {
-    fn drop(&mut self) {
-        // Clean up raw pointers by converting them back into boxes
-        // and allowing them to be automatically dropped
-        if let Some(left) = self.left {
-            let _ = unsafe { Box::from_raw(left) };
-            self.left = None;
-        }
-        if let Some(right) = self.right {
-            let _ = unsafe { Box::from_raw(right) };
-            self.right = None;
-        }
     }
 }
