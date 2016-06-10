@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 pub struct HeapElement<T> {
     pub distance: f64,
-    pub element: T
+    pub element: T,
 }
 
 impl<T> Ord for HeapElement<T> {
@@ -17,11 +17,16 @@ impl<T> PartialOrd for HeapElement<T> {
     }
 }
 
-impl<T> Eq for HeapElement<T> {
-}
+impl<T> Eq for HeapElement<T> {}
 
 impl<T> PartialEq for HeapElement<T> {
     fn eq(&self, other: &Self) -> bool {
         self.distance == other.distance
+    }
+}
+
+impl<T> Into<(f64, T)> for HeapElement<T> {
+    fn into(self) -> (f64, T) {
+        (self.distance, self.element)
     }
 }

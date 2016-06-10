@@ -66,28 +66,22 @@ impl<'a, T> KdTree<'a, T> {
         if let Err(err) = self.check_point(point) {
             return Err(err);
         }
+        let num = std::cmp::min(num, self.size);
+        if num <= 0 {
+            return Ok(vec![]);
+        }
         let pending = &mut BinaryHeap::<HeapElement<&KdTree<T>>>::new();
         let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
-        let num = std::cmp::min(num, self.size);
         pending.push(HeapElement {
             distance: 0f64,
             element: self,
         });
-        while !pending.is_empty() && num > 0 &&
+        while !pending.is_empty() &&
               (evaluated.len() < num ||
                (-pending.peek().unwrap().distance < evaluated.peek().unwrap().distance)) {
             self.nearest_step(point, num, distance, pending, &mut evaluated);
         }
-        let mut result = vec![];
-        loop {
-            match evaluated.pop() {
-                None => {
-                    result.reverse();
-                    return Ok(result);
-                }
-                Some(e) => result.push((e.distance, e.element)),
-            }
-        }
+        Ok(evaluated.into_sorted_vec().into_iter().take(num).map(Into::into).collect())
     }
 
     fn nearest_step<'b, F>(&self,
@@ -98,13 +92,12 @@ impl<'a, T> KdTree<'a, T> {
                            evaluated: &mut BinaryHeap<HeapElement<&'b T>>)
         where F: Fn(&[f64], &[f64]) -> f64
     {
-        let curr = pending.pop();
-
-        if curr.is_none() {
-            return;
-        }
-
-        let mut curr = &*curr.unwrap().element;
+        let mut curr = &*pending.pop().unwrap().element;
+        let evaluated_dist = if evaluated.len() < num {
+            std::f64::INFINITY
+        } else {
+            evaluated.peek().unwrap().distance
+        };
 
         while !curr.is_leaf() {
             let candidate;
@@ -117,7 +110,7 @@ impl<'a, T> KdTree<'a, T> {
             }
             let candidate_to_space =
                 util::distance_to_space(point, &*curr.min_bounds, &*curr.max_bounds, distance);
-            if evaluated.len() < num || candidate_to_space <= evaluated.peek().unwrap().distance {
+            if candidate_to_space <= evaluated_dist {
                 pending.push(HeapElement {
                     distance: candidate_to_space * -1f64,
                     element: &**candidate,
@@ -125,21 +118,20 @@ impl<'a, T> KdTree<'a, T> {
             }
         }
 
-        for i in 0..curr.size {
-            let p = curr.points.as_ref().unwrap()[i];
-            let d = &curr.bucket.as_ref().unwrap()[i];
-            let p_to_point = distance(p, point);
+        let points = curr.points.as_ref().unwrap().iter();
+        let bucket = curr.bucket.as_ref().unwrap().iter();
+        let iter = points.zip(bucket).map(|(p, d)| {
+            HeapElement {
+                distance: distance(p, point),
+                element: d,
+            }
+        });
+        for element in iter {
             if evaluated.len() < num {
-                evaluated.push(HeapElement {
-                    distance: p_to_point,
-                    element: d,
-                });
-            } else if p_to_point < evaluated.peek().unwrap().distance {
+                evaluated.push(element);
+            } else if element < *evaluated.peek().unwrap() {
                 evaluated.pop();
-                evaluated.push(HeapElement {
-                    distance: p_to_point,
-                    element: d,
-                });
+                evaluated.push(element);
             }
         }
     }
