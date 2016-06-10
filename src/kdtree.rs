@@ -101,12 +101,12 @@ impl<'a, T> KdTree<'a, T> {
 
         while !curr.is_leaf() {
             let candidate;
-            if point[curr.split_dimension.unwrap()] > curr.split_value.unwrap() {
-                candidate = curr.left.as_ref().unwrap();
-                curr = curr.right.as_ref().unwrap();
-            } else {
+            if curr.belongs_in_left(point) {
                 candidate = curr.right.as_ref().unwrap();
                 curr = curr.left.as_ref().unwrap();
+            } else {
+                candidate = curr.left.as_ref().unwrap();
+                curr = curr.right.as_ref().unwrap();
             }
             let candidate_to_space =
                 util::distance_to_space(point, &*curr.min_bounds, &*curr.max_bounds, distance);
@@ -153,7 +153,7 @@ impl<'a, T> KdTree<'a, T> {
         }
         self.extend(point);
         self.size += 1;
-        let next = if point[self.split_dimension.unwrap()] < self.split_value.unwrap() {
+        let next = if self.belongs_in_left(point) {
             self.left.as_mut()
         } else {
             self.right.as_mut()
@@ -203,7 +203,7 @@ impl<'a, T> KdTree<'a, T> {
         while !points.is_empty() {
             let point = points.swap_remove(0);
             let data = bucket.swap_remove(0);
-            if point[self.split_dimension.unwrap()] < self.split_value.unwrap() {
+            if self.belongs_in_left(point) {
                 left.add_to_bucket(point, data);
             } else {
                 right.add_to_bucket(point, data);
@@ -213,11 +213,14 @@ impl<'a, T> KdTree<'a, T> {
         self.right = Some(right);
     }
 
-    fn extend(&mut self, point: &[f64]) {
-        let (mut i, mut a, mut d) =
-            (self.min_bounds.iter_mut(), self.max_bounds.iter_mut(), point.iter());
+    fn belongs_in_left(&self, point: &'a [f64]) -> bool {
+        point[self.split_dimension.unwrap()] < self.split_value.unwrap()
+    }
 
-        while let (Some(l), Some(h), Some(v)) = (i.next(), a.next(), d.next()) {
+    fn extend(&mut self, point: &[f64]) {
+        let min = self.min_bounds.iter_mut();
+        let max = self.max_bounds.iter_mut();
+        for ((l, h), v) in min.zip(max).zip(point.iter()) {
             if v < l {
                 *l = *v
             }
