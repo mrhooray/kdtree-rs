@@ -4,10 +4,10 @@ use ::heap_element::HeapElement;
 use ::util;
 
 #[derive(Debug)]
-pub struct KdTree<'a, T> {
+pub struct KdTree<T, U: AsRef<[f64]>> {
     // node
-    left: Option<Box<KdTree<'a, T>>>,
-    right: Option<Box<KdTree<'a, T>>>,
+    left: Option<Box<KdTree<T, U>>>,
+    right: Option<Box<KdTree<T, U>>>,
     // common
     dimensions: usize,
     capacity: usize,
@@ -18,7 +18,7 @@ pub struct KdTree<'a, T> {
     split_value: Option<f64>,
     split_dimension: Option<usize>,
     // leaf
-    points: Option<Vec<&'a [f64]>>,
+    points: Option<Vec<U>>,
     bucket: Option<Vec<T>>,
 }
 
@@ -29,12 +29,12 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<'a, T> KdTree<'a, T> {
-    pub fn new(dims: usize) -> KdTree<'a, T> {
+impl<T, U: AsRef<[f64]>> KdTree<T, U> {
+    pub fn new(dims: usize) -> KdTree<T, U> {
         KdTree::new_with_capacity(dims, 2 ^ 4)
     }
 
-    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdTree<'a, T> {
+    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdTree<T, U> {
         let min_bounds = vec![std::f64::INFINITY; dimensions];
         let max_bounds = vec![std::f64::NEG_INFINITY; dimensions];
         KdTree {
@@ -63,14 +63,14 @@ impl<'a, T> KdTree<'a, T> {
                       -> Result<Vec<(f64, &T)>, ErrorKind>
         where F: Fn(&[f64], &[f64]) -> f64
     {
-        if let Err(err) = self.check_point(point) {
+        if let Err(err) = self.check_point(point.as_ref()) {
             return Err(err);
         }
         let num = std::cmp::min(num, self.size);
         if num <= 0 {
             return Ok(vec![]);
         }
-        let pending = &mut BinaryHeap::<HeapElement<&KdTree<T>>>::new();
+        let pending = &mut BinaryHeap::new();
         let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
         pending.push(HeapElement {
             distance: 0f64,
@@ -88,7 +88,7 @@ impl<'a, T> KdTree<'a, T> {
                            point: &[f64],
                            num: usize,
                            distance: &F,
-                           pending: &mut BinaryHeap<HeapElement<&'b KdTree<T>>>,
+                           pending: &mut BinaryHeap<HeapElement<&'b KdTree<T, U>>>,
                            evaluated: &mut BinaryHeap<HeapElement<&'b T>>)
         where F: Fn(&[f64], &[f64]) -> f64
     {
@@ -101,7 +101,7 @@ impl<'a, T> KdTree<'a, T> {
 
         while !curr.is_leaf() {
             let candidate;
-            if curr.belongs_in_left(point) {
+            if curr.belongs_in_left(point.as_ref()) {
                 candidate = curr.right.as_ref().unwrap();
                 curr = curr.left.as_ref().unwrap();
             } else {
@@ -122,7 +122,7 @@ impl<'a, T> KdTree<'a, T> {
         let bucket = curr.bucket.as_ref().unwrap().iter();
         let iter = points.zip(bucket).map(|(p, d)| {
             HeapElement {
-                distance: distance(p, point),
+                distance: distance(p.as_ref(), point),
                 element: d,
             }
         });
@@ -136,24 +136,24 @@ impl<'a, T> KdTree<'a, T> {
         }
     }
 
-    pub fn add(&mut self, point: &'a [f64], data: T) -> Result<(), ErrorKind> {
+    pub fn add(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
         if self.capacity == 0 {
             return Err(ErrorKind::ZeroCapacity);
         }
-        if let Err(err) = self.check_point(point) {
+        if let Err(err) = self.check_point(point.as_ref()) {
             return Err(err);
         }
         self.add_unchecked(point, data)
     }
 
-    fn add_unchecked(&mut self, point: &'a [f64], data: T) -> Result<(), ErrorKind> {
+    fn add_unchecked(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
         if self.is_leaf() {
             self.add_to_bucket(point, data);
             return Ok(());
         }
-        self.extend(point);
+        self.extend(point.as_ref());
         self.size += 1;
-        let next = if self.belongs_in_left(point) {
+        let next = if self.belongs_in_left(point.as_ref()) {
             self.left.as_mut()
         } else {
             self.right.as_mut()
@@ -162,8 +162,8 @@ impl<'a, T> KdTree<'a, T> {
     }
 
 
-    fn add_to_bucket(&mut self, point: &'a [f64], data: T) {
-        self.extend(point);
+    fn add_to_bucket(&mut self, point: U, data: T) {
+        self.extend(point.as_ref());
         let mut points = self.points.take().unwrap();
         let mut bucket = self.bucket.take().unwrap();
         points.push(point);
@@ -177,7 +177,7 @@ impl<'a, T> KdTree<'a, T> {
         }
     }
 
-    fn split(&mut self, mut points: Vec<&'a [f64]>, mut bucket: Vec<T>) {
+    fn split(&mut self, mut points: Vec<U>, mut bucket: Vec<T>) {
         let mut max = 0f64;
         for dim in 0..self.dimensions {
             let diff = self.max_bounds[dim] - self.min_bounds[dim];
@@ -198,12 +198,12 @@ impl<'a, T> KdTree<'a, T> {
                 self.split_value = Some(min + (max - min) / 2f64);
             }
         };
-        let mut left = Box::new(KdTree::<T>::new_with_capacity(self.dimensions, self.capacity));
-        let mut right = Box::new(KdTree::<T>::new_with_capacity(self.dimensions, self.capacity));
+        let mut left = Box::new(KdTree::new_with_capacity(self.dimensions, self.capacity));
+        let mut right = Box::new(KdTree::new_with_capacity(self.dimensions, self.capacity));
         while !points.is_empty() {
             let point = points.swap_remove(0);
             let data = bucket.swap_remove(0);
-            if self.belongs_in_left(point) {
+            if self.belongs_in_left(point.as_ref()) {
                 left.add_to_bucket(point, data);
             } else {
                 right.add_to_bucket(point, data);
@@ -213,7 +213,7 @@ impl<'a, T> KdTree<'a, T> {
         self.right = Some(right);
     }
 
-    fn belongs_in_left(&self, point: &'a [f64]) -> bool {
+    fn belongs_in_left(&self, point: &[f64]) -> bool {
         point[self.split_dimension.unwrap()] < self.split_value.unwrap()
     }
 

@@ -38,6 +38,34 @@ fn it_works() {
 }
 
 #[test]
+fn it_works_with_vec() {
+    let dimensions = 2;
+    let capacity_per_node = 2;
+    let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
+
+    kdtree.add(vec![0.0; 2], 0).unwrap();
+    kdtree.add(vec![1.0; 2], 1).unwrap();
+    kdtree.add(vec![2.0; 2], 2).unwrap();
+    kdtree.add(vec![3.0; 2], 3).unwrap();
+
+    assert_eq!(kdtree.size(), 4);
+    assert_eq!(kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(),
+               vec![]);
+    assert_eq!(kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
+               vec![(0f64, &0)]);
+    assert_eq!(kdtree.nearest(&POINT_A.0, 2, &squared_euclidean).unwrap(),
+               vec![(0f64, &0), (2f64, &1)]);
+    assert_eq!(kdtree.nearest(&POINT_A.0, 3, &squared_euclidean).unwrap(),
+               vec![(0f64, &0), (2f64, &1), (8f64, &2)]);
+    assert_eq!(kdtree.nearest(&POINT_A.0, 4, &squared_euclidean).unwrap(),
+               vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]);
+    assert_eq!(kdtree.nearest(&POINT_A.0, 5, &squared_euclidean).unwrap(),
+               vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]);
+    assert_eq!(kdtree.nearest(&POINT_B.0, 4, &squared_euclidean).unwrap(),
+               vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]);
+}
+
+#[test]
 fn handles_zero_capacity() {
     let mut kdtree = KdTree::new_with_capacity(2, 0);
     assert_eq!(kdtree.add(&POINT_A.0, POINT_A.1),
