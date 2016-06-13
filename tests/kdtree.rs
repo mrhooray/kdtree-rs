@@ -35,6 +35,13 @@ fn it_works() {
                vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]);
     assert_eq!(kdtree.nearest(&POINT_B.0, 4, &squared_euclidean).unwrap(),
                vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]);
+
+    assert_eq!(kdtree.within(&POINT_A.0, 0.0, &squared_euclidean).unwrap(),
+               vec![(0.0, &0)]);
+    assert_eq!(kdtree.within(&POINT_B.0, 1.0, &squared_euclidean).unwrap(),
+               vec![(0.0, &1)]);
+    assert_eq!(kdtree.within(&POINT_B.0, 2.0, &squared_euclidean).unwrap(),
+               vec![(0.0, &1), (2.0, &2), (2.0, &0)]);
 }
 
 #[test]
@@ -139,6 +146,17 @@ fn handles_pending_order() {
                vec![(16.0, &3), (36.0, &4)]);
     assert_eq!(kdtree.nearest(&[49f64], 4, &squared_euclidean).unwrap(),
                vec![(16.0, &3), (36.0, &4), (2401.0, &1), (2601.0, &2)]);
+
+    assert_eq!(kdtree.within(&[50f64], 1.0, &squared_euclidean).unwrap(),
+               vec![]);
+    assert_eq!(kdtree.within(&[50f64], 25.0, &squared_euclidean).unwrap(),
+               vec![(25.0, &3), (25.0, &4)]);
+    assert_eq!(kdtree.within(&[50f64], 30.0, &squared_euclidean).unwrap(),
+               vec![(25.0, &3), (25.0, &4)]);
+    assert_eq!(kdtree.within(&[55f64], 5.0, &squared_euclidean).unwrap(),
+               vec![(0.0, &4)]);
+    assert_eq!(kdtree.within(&[56f64], 5.0, &squared_euclidean).unwrap(),
+               vec![(1.0, &4)]);
 }
 
 #[test]
