@@ -1,5 +1,6 @@
 use std;
 use std::collections::BinaryHeap;
+use std::f64::{INFINITY, NEG_INFINITY};
 use ::heap_element::HeapElement;
 use ::util;
 
@@ -35,8 +36,8 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
     }
 
     pub fn new_with_capacity(dimensions: usize, capacity: usize) -> Self {
-        let min_bounds = vec![std::f64::INFINITY; dimensions];
-        let max_bounds = vec![std::f64::NEG_INFINITY; dimensions];
+        let min_bounds = vec![INFINITY; dimensions];
+        let max_bounds = vec![NEG_INFINITY; dimensions];
         KdTree {
             left: None,
             right: None,
@@ -78,15 +79,46 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
         });
         while !pending.is_empty() &&
               (evaluated.len() < num ||
-               (-pending.peek().unwrap().distance < evaluated.peek().unwrap().distance)) {
-            self.nearest_step(point, num, distance, &mut pending, &mut evaluated);
+               (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance)) {
+            self.nearest_step(point, num, INFINITY, distance, &mut pending, &mut evaluated);
         }
         Ok(evaluated.into_sorted_vec().into_iter().take(num).map(Into::into).collect())
+    }
+
+    pub fn within<F>(&self,
+                     point: &[f64],
+                     ridius: f64,
+                     distance: &F)
+                     -> Result<Vec<(f64, &T)>, ErrorKind>
+        where F: Fn(&[f64], &[f64]) -> f64
+    {
+        if let Err(err) = self.check_point(point.as_ref()) {
+            return Err(err);
+        }
+        if self.size <= 0 {
+            return Ok(vec![]);
+        }
+        let mut pending = BinaryHeap::new();
+        let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
+        pending.push(HeapElement {
+            distance: 0f64,
+            element: self,
+        });
+        while !pending.is_empty() && (-pending.peek().unwrap().distance <= ridius) {
+            self.nearest_step(point,
+                              self.size,
+                              ridius,
+                              distance,
+                              &mut pending,
+                              &mut evaluated);
+        }
+        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
     }
 
     fn nearest_step<'b, F>(&self,
                            point: &[f64],
                            num: usize,
+                           max_dist: f64,
                            distance: &F,
                            pending: &mut BinaryHeap<HeapElement<&'b Self>>,
                            evaluated: &mut BinaryHeap<HeapElement<&'b T>>)
@@ -94,9 +126,13 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
     {
         let mut curr = &*pending.pop().unwrap().element;
         let evaluated_dist = if evaluated.len() < num {
-            std::f64::INFINITY
+            INFINITY
         } else {
-            evaluated.peek().unwrap().distance
+            if max_dist < evaluated.peek().unwrap().distance {
+                max_dist
+            } else {
+                evaluated.peek().unwrap().distance
+            }
         };
 
         while !curr.is_leaf() {
@@ -127,11 +163,13 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
             }
         });
         for element in iter {
-            if evaluated.len() < num {
-                evaluated.push(element);
-            } else if element < *evaluated.peek().unwrap() {
-                evaluated.pop();
-                evaluated.push(element);
+            if element <= max_dist {
+                if evaluated.len() < num {
+                    evaluated.push(element);
+                } else if element < *evaluated.peek().unwrap() {
+                    evaluated.pop();
+                    evaluated.push(element);
+                }
             }
         }
     }
