@@ -30,11 +30,11 @@ pub enum ErrorKind {
 }
 
 impl<T, U: AsRef<[f64]>> KdTree<T, U> {
-    pub fn new(dims: usize) -> KdTree<T, U> {
-        KdTree::new_with_capacity(dims, 2 ^ 4)
+    pub fn new(dims: usize) -> Self {
+        KdTree::new_with_capacity(dims, 2usize.pow(4))
     }
 
-    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> KdTree<T, U> {
+    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> Self {
         let min_bounds = vec![std::f64::INFINITY; dimensions];
         let max_bounds = vec![std::f64::NEG_INFINITY; dimensions];
         KdTree {
@@ -70,7 +70,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
         if num <= 0 {
             return Ok(vec![]);
         }
-        let pending = &mut BinaryHeap::new();
+        let mut pending = BinaryHeap::new();
         let mut evaluated = BinaryHeap::<HeapElement<&T>>::new();
         pending.push(HeapElement {
             distance: 0f64,
@@ -79,7 +79,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
         while !pending.is_empty() &&
               (evaluated.len() < num ||
                (-pending.peek().unwrap().distance < evaluated.peek().unwrap().distance)) {
-            self.nearest_step(point, num, distance, pending, &mut evaluated);
+            self.nearest_step(point, num, distance, &mut pending, &mut evaluated);
         }
         Ok(evaluated.into_sorted_vec().into_iter().take(num).map(Into::into).collect())
     }
@@ -88,7 +88,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
                            point: &[f64],
                            num: usize,
                            distance: &F,
-                           pending: &mut BinaryHeap<HeapElement<&'b KdTree<T, U>>>,
+                           pending: &mut BinaryHeap<HeapElement<&'b Self>>,
                            evaluated: &mut BinaryHeap<HeapElement<&'b T>>)
         where F: Fn(&[f64], &[f64]) -> f64
     {
