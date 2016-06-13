@@ -16,11 +16,10 @@ fn bench_add_to_kdtree_with_1k_3d_points(b: &mut Bencher) {
     let len = 1000usize;
     let point = ([rand_f64(), rand_f64(), rand_f64()], rand_f64());
     let mut points = vec![];
-    let mut kdtree = KdTree::<f64>::new_with_capacity(3, 16);
+    let mut kdtree = KdTree::new_with_capacity(3, 16);
     for _ in 0..len {
         points.push(([rand_f64(), rand_f64(), rand_f64()], rand_f64()));
     }
-    let points = &points[..];
     for i in 0..points.len() {
         kdtree.add(&points[i].0, points[i].1).unwrap();
     }
@@ -32,11 +31,10 @@ fn bench_nearest_from_kdtree_with_1k_3d_points(b: &mut Bencher) {
     let len = 1000usize;
     let point = ([rand_f64(), rand_f64(), rand_f64()], rand_f64());
     let mut points = vec![];
-    let mut kdtree = KdTree::<f64>::new_with_capacity(3, 16);
+    let mut kdtree = KdTree::new_with_capacity(3, 16);
     for _ in 0..len {
         points.push(([rand_f64(), rand_f64(), rand_f64()], rand_f64()));
     }
-    let points = &points[..];
     for i in 0..points.len() {
         kdtree.add(&points[i].0, points[i].1).unwrap();
     }
