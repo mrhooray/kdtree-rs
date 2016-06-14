@@ -64,7 +64,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
                       -> Result<Vec<(f64, &T)>, ErrorKind>
         where F: Fn(&[f64], &[f64]) -> f64
     {
-        if let Err(err) = self.check_point(point.as_ref()) {
+        if let Err(err) = self.check_point(point) {
             return Err(err);
         }
         let num = std::cmp::min(num, self.size);
@@ -92,7 +92,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
                      -> Result<Vec<(f64, &T)>, ErrorKind>
         where F: Fn(&[f64], &[f64]) -> f64
     {
-        if let Err(err) = self.check_point(point.as_ref()) {
+        if let Err(err) = self.check_point(point) {
             return Err(err);
         }
         if self.size <= 0 {
@@ -137,7 +137,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
 
         while !curr.is_leaf() {
             let candidate;
-            if curr.belongs_in_left(point.as_ref()) {
+            if curr.belongs_in_left(point) {
                 candidate = curr.right.as_ref().unwrap();
                 curr = curr.left.as_ref().unwrap();
             } else {
@@ -172,6 +172,29 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
                 }
             }
         }
+    }
+
+    pub fn iter_nearest<'a, 'b, F>(&'b self,
+                                   point: &'a [f64],
+                                   distance: &'a F)
+                                   -> Result<NearestIter<'a, 'b, T, U, F>, ErrorKind>
+        where F: Fn(&[f64], &[f64]) -> f64
+    {
+        if let Err(err) = self.check_point(point) {
+            return Err(err);
+        }
+        let mut pending = BinaryHeap::new();
+        let evaluated = BinaryHeap::<HeapElement<&T>>::new();
+        pending.push(HeapElement {
+            distance: 0f64,
+            element: self,
+        });
+        Ok(NearestIter {
+            point: point,
+            pending: pending,
+            evaluated: evaluated,
+            distance: distance,
+        })
     }
 
     pub fn add(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
@@ -283,5 +306,55 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
             }
         }
         Ok(())
+    }
+}
+
+pub struct NearestIter<'a, 'b, T: 'b, U: 'b + AsRef<[f64]>, F: 'a + Fn(&[f64], &[f64]) -> f64> {
+    point: &'a [f64],
+    pending: BinaryHeap<HeapElement<&'b KdTree<T, U>>>,
+    evaluated: BinaryHeap<HeapElement<&'b T>>,
+    distance: &'a F,
+}
+
+impl<'a, 'b, T: 'b, U: 'b + AsRef<[f64]>, F: 'a> Iterator for NearestIter<'a, 'b, T, U, F>
+    where F: Fn(&[f64], &[f64]) -> f64
+{
+    type Item = (f64, &'b T);
+    fn next(&mut self) -> Option<(f64, &'b T)> {
+        use util::distance_to_space;
+        let distance = self.distance;
+        let point = self.point;
+        while !self.pending.is_empty() &&
+              (self.evaluated.peek().map_or(INFINITY, |x| -x.distance) >=
+               -self.pending.peek().unwrap().distance) {
+            let mut curr = &*self.pending.pop().unwrap().element;
+            while !curr.is_leaf() {
+                let candidate;
+                if curr.belongs_in_left(point) {
+                    candidate = curr.right.as_ref().unwrap();
+                    curr = curr.left.as_ref().unwrap();
+                } else {
+                    candidate = curr.left.as_ref().unwrap();
+                    curr = curr.right.as_ref().unwrap();
+                }
+                self.pending.push(HeapElement {
+                    distance: -distance_to_space(point,
+                                                 &*curr.min_bounds,
+                                                 &*curr.max_bounds,
+                                                 distance),
+                    element: &**candidate,
+                });
+            }
+            let points = curr.points.as_ref().unwrap().iter();
+            let bucket = curr.bucket.as_ref().unwrap().iter();
+            self.evaluated.extend(points.zip(bucket).map(|(p, d)| {
+                HeapElement {
+                    distance: -distance(p.as_ref(), point),
+                    element: d,
+                }
+            }));
+
+        }
+        self.evaluated.pop().map(|x| (-x.distance, x.element))
     }
 }
