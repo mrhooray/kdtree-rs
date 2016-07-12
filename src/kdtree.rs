@@ -144,8 +144,10 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
                 candidate = curr.left.as_ref().unwrap();
                 curr = curr.right.as_ref().unwrap();
             }
-            let candidate_to_space =
-                util::distance_to_space(point, &*curr.min_bounds, &*curr.max_bounds, distance);
+            let candidate_to_space = util::distance_to_space(point,
+                                                             &*candidate.min_bounds,
+                                                             &*candidate.max_bounds,
+                                                             distance);
             if candidate_to_space <= evaluated_dist {
                 pending.push(HeapElement {
                     distance: candidate_to_space * -1f64,
@@ -158,7 +160,7 @@ impl<T, U: AsRef<[f64]>> KdTree<T, U> {
         let bucket = curr.bucket.as_ref().unwrap().iter();
         let iter = points.zip(bucket).map(|(p, d)| {
             HeapElement {
-                distance: distance(p.as_ref(), point),
+                distance: distance(point, p.as_ref()),
                 element: d,
             }
         });
@@ -339,8 +341,8 @@ impl<'a, 'b, T: 'b, U: 'b + AsRef<[f64]>, F: 'a> Iterator for NearestIter<'a, 'b
                 }
                 self.pending.push(HeapElement {
                     distance: -distance_to_space(point,
-                                                 &*curr.min_bounds,
-                                                 &*curr.max_bounds,
+                                                 &*candidate.min_bounds,
+                                                 &*candidate.max_bounds,
                                                  distance),
                     element: &**candidate,
                 });
@@ -349,7 +351,7 @@ impl<'a, 'b, T: 'b, U: 'b + AsRef<[f64]>, F: 'a> Iterator for NearestIter<'a, 'b
             let bucket = curr.bucket.as_ref().unwrap().iter();
             self.evaluated.extend(points.zip(bucket).map(|(p, d)| {
                 HeapElement {
-                    distance: -distance(p.as_ref(), point),
+                    distance: -distance(point, p.as_ref()),
                     element: d,
                 }
             }));
