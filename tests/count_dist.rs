@@ -31,10 +31,10 @@ fn it_works() {
     assert_eq!(0, count.swap(0, Ordering::SeqCst));
 
     kdtree.nearest(&POINT_A.0, 1, &new_dist).unwrap();
-    assert_eq!(4, count.swap(0, Ordering::SeqCst));
+    assert_eq!(2, count.swap(0, Ordering::SeqCst));
 
     kdtree.nearest(&POINT_A.0, 2, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(4, count.swap(0, Ordering::SeqCst));
 
     kdtree.nearest(&POINT_A.0, 3, &new_dist).unwrap();
     assert_eq!(6, count.swap(0, Ordering::SeqCst));
@@ -50,10 +50,10 @@ fn it_works() {
 
 
     kdtree.within(&POINT_A.0, 0.0, &new_dist).unwrap();
-    assert_eq!(4, count.swap(0, Ordering::SeqCst));
+    assert_eq!(2, count.swap(0, Ordering::SeqCst));
 
     kdtree.within(&POINT_B.0, 1.0, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(3, count.swap(0, Ordering::SeqCst));
 
     kdtree.within(&POINT_B.0, 2.0, &new_dist).unwrap();
     assert_eq!(6, count.swap(0, Ordering::SeqCst));
@@ -62,13 +62,13 @@ fn it_works() {
     assert_eq!(0, count.swap(0, Ordering::SeqCst));
 
     iter.next().unwrap();
-    assert_eq!(4, count.swap(0, Ordering::SeqCst));
+    assert_eq!(2, count.swap(0, Ordering::SeqCst));
 
     iter.next().unwrap();
     assert_eq!(2, count.swap(0, Ordering::SeqCst));
 
     iter.next().unwrap();
-    assert_eq!(0, count.swap(0, Ordering::SeqCst));
+    assert_eq!(2, count.swap(0, Ordering::SeqCst));
 
     iter.next().unwrap();
     assert_eq!(0, count.swap(0, Ordering::SeqCst));
