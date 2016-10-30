@@ -25,7 +25,7 @@
 /// ```rust,should_panic
 /// # use kdtree::distance::squared_euclidean;
 /// // this is broken
-/// let _ = squared_euclidean(&[0.0, 0.0], &[1.0, 0.0, 0.0])
+/// let _ = squared_euclidean(&[0.0, 0.0], &[1.0, 0.0, 0.0]);
 /// ```
 pub fn squared_euclidean(a: &[f64], b: &[f64]) -> f64 {
     debug_assert!(a.len() == b.len());
