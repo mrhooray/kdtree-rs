@@ -360,3 +360,48 @@ impl<'a, 'b, T: 'b, U: 'b + AsRef<[f64]>, F: 'a> Iterator for NearestIter<'a, 'b
         self.evaluated.pop().map(|x| (-x.distance, x.element))
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    extern crate rand;
+    use super::KdTree;
+
+    fn random_point() -> ([f64; 2], i32) {
+        rand::random::<([f64; 2], i32)>()
+    }
+
+    #[test]
+    fn it_has_default_capacity() {
+        let tree: KdTree<u32, [f64; 2]> = KdTree::new(2);
+        assert!(tree.capacity == 2usize.pow(4));
+    }
+
+    #[test]
+    fn it_holds_on_to_its_capacity_before_splitting() {
+        let mut tree: KdTree<i32, [f64; 2]> = KdTree::new(2);
+        let capacity = 2usize.pow(4);
+        for _ in 0..capacity {
+            let (pos, data) = random_point();
+            tree.add(pos, data).unwrap();
+        }
+        assert!(tree.size == capacity);
+        assert!(tree.size() == capacity);
+        assert!(tree.left.is_none() && tree.right.is_none());
+        {
+            let (pos, data) = random_point();
+            tree.add(pos, data).unwrap();
+        }
+        assert!(tree.size == capacity + 1);
+        assert!(tree.size() == capacity + 1);
+        assert!(tree.left.is_some() && tree.right.is_some());
+    }
+
+    #[test]
+    fn no_items_can_be_added_to_a_zero_capacity_kdtree() {
+        let mut tree: KdTree<i32, [f64; 2]> = KdTree::new_with_capacity(2, 0);
+        let (pos, data) = random_point();
+        let res = tree.add(pos, data);
+        assert!(res.is_err());
+    }
+}
