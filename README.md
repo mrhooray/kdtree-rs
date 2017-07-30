@@ -2,7 +2,7 @@
 > K-dimensional tree in Rust for fast geospatial indexing
 
 * [Crate](https://crates.io/crates/kdtree)
-* [Documentation](http://mrhooray.github.io/kdtree-rs/kdtree/index.html)
+* [Documentation](https://docs.rs/kdtree)
 * [Usage](#usage)
 * [Benchmark](#benchmark)
 * [License](#license)
