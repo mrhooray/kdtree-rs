@@ -7,7 +7,7 @@
 * [Benchmark](#benchmark)
 * [License](#license)
 
-##Usage
+## Usage
 Add `kdtree` to `Cargo.toml`
 ```toml
 [dependencies]
@@ -64,7 +64,7 @@ assert_eq!(
 );
 ```
 
-##Benchmark
+## Benchmark
 `cargo bench` with 2.3 GHz Intel Core i7:
 ```
 cargo bench
@@ -77,5 +77,5 @@ test bench_nearest_from_kdtree_with_1k_3d_points ... bench:       2,661 ns/iter 
 test result: ok. 0 passed; 0 failed; 0 ignored; 2 measured
 ```
 
-##License
+## License
 MIT
