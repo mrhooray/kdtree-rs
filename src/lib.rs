@@ -51,6 +51,10 @@
 //!     );
 //! ```
 
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
+
 pub mod kdtree;
 pub mod distance;
 mod heap_element;
