@@ -361,6 +361,22 @@ impl<'a, 'b, T: 'b, U: 'b + AsRef<[f64]>, F: 'a> Iterator for NearestIter<'a, 'b
     }
 }
 
+impl std::error::Error for ErrorKind {
+    fn description(&self) -> &str {
+        match *self {
+            ErrorKind::WrongDimension => "wrong dimension",
+            ErrorKind::NonFiniteCoordinate => "non-finite coordinate",
+            ErrorKind::ZeroCapacity => "zero capacity",
+        }
+    }
+}
+
+impl std::fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use std::error::Error;
+        write!(f, "KdTree error: {}", self.description())
+    }
+}
 
 #[cfg(test)]
 mod tests {
