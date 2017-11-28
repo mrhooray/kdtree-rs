@@ -65,17 +65,18 @@ assert_eq!(
 ```
 
 ## Benchmark
-`cargo bench` with 2.3 GHz Intel Core i7:
+`cargo bench` with 2.3 GHz Intel i5-7360U:
 ```
 cargo bench
-     Running target/release/bench-a26a346635ebfc8f
+     Running target/release/deps/bench-9e622e6a4ed9b92a
 
 running 2 tests
-test bench_add_to_kdtree_with_1k_3d_points     ... bench:         116 ns/iter (+/- 24)
-test bench_nearest_from_kdtree_with_1k_3d_points ... bench:       2,661 ns/iter (+/- 1,769)
+test bench_add_to_kdtree_with_1k_3d_points       ... bench:         106 ns/iter (+/- 25)
+test bench_nearest_from_kdtree_with_1k_3d_points ... bench:       1,237 ns/iter (+/- 266)
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 2 measured
+test result: ok. 0 passed; 0 failed; 0 ignored; 2 measured; 0 filtered out
 ```
+Thanks [Eh2406](https://github.com/Eh2406) for various fixes and perf improvements.
 
 ## License
 
