@@ -1,6 +1,6 @@
 [package]
 name = "kdtree"
-version = "0.3.3"
+version = "0.4.0"
 authors = ["Rui Hu <code@mrhooray.com>"]
 description = "K-dimensional tree in Rust for fast geospatial indexing"
 keywords = ["tree", "nearest", "dimension", "search", "geo"]
@@ -10,4 +10,4 @@ documentation = "https://docs.rs/kdtree"
 license = "MIT OR Apache-2.0"
 
 [dev-dependencies]
-rand = "~0.3.9"
+rand = "0.3.9"
