@@ -23,10 +23,13 @@ pub struct KdTree<T, U: AsRef<[f64]>> {
     bucket: Option<Vec<T>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Fail, PartialEq)]
 pub enum ErrorKind {
+    #[fail(display = "Wrong dimension")]
     WrongDimension,
+    #[fail(display = "Non-finite coordinate")]
     NonFiniteCoordinate,
+    #[fail(display = "Zero capacity")]
     ZeroCapacity,
 }
 
