@@ -27,9 +27,11 @@
 /// // this is broken
 /// let _ = squared_euclidean(&[0.0, 0.0], &[1.0, 0.0, 0.0]);
 /// ```
-pub fn squared_euclidean(a: &[f64], b: &[f64]) -> f64 {
+use num_traits::Float;
+
+pub fn squared_euclidean<T: Float>(a: &[T], b: &[T]) -> T {
     debug_assert!(a.len() == b.len());
     a.iter().zip(b.iter())
-            .map(|(x, y)| (x - y) * (x - y))
-            .fold(0f64, ::std::ops::Add::add)
+            .map(|(x, y)| ((*x) - (*y)) * ((*x) - (*y)))
+            .fold(T::zero(), ::std::ops::Add::add)
 }

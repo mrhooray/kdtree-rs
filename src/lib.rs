@@ -51,6 +51,7 @@
 //!     );
 //! ```
 
+extern crate num_traits;
 pub mod kdtree;
 pub mod distance;
 mod heap_element;
