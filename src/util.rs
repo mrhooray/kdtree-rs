@@ -22,7 +22,6 @@ where F: Fn(&[T], &[T]) -> T,
 mod tests {
     use super::distance_to_space;
     use super::super::distance::squared_euclidean;
-    use num_traits::Float;
     use std::f64::{INFINITY, NEG_INFINITY};
 
     #[test]
