@@ -4,6 +4,7 @@ use std::collections::BinaryHeap;
 use ::heap_element::HeapElement;
 use ::util;
 
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct KdTree<A, T, U: AsRef<[A]>> {
     // node
