@@ -52,6 +52,11 @@
 //! ```
 
 extern crate num_traits;
+
+#[cfg(feature = "serialize")]
+#[cfg_attr(feature = "serialize", macro_use)]
+extern crate serde_derive;
+
 pub mod kdtree;
 pub mod distance;
 mod heap_element;
