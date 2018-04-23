@@ -1,44 +1,46 @@
+use num_traits::Float;
 use std::cmp::Ordering;
 
-pub struct HeapElement<T> {
-    pub distance: f64,
+pub struct HeapElement<A, T> {
+    pub distance: A,
     pub element: T,
 }
 
-impl<T> Ord for HeapElement<T> {
+impl<A: Float, T>  Ord for HeapElement<A, T>  {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap_or(Ordering::Equal)
     }
 }
 
-impl<T> PartialOrd for HeapElement<T> {
+impl<A: Float, T>  PartialOrd for HeapElement<A, T>  {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.distance.partial_cmp(&other.distance)
     }
 }
 
-impl<T> PartialOrd<f64> for HeapElement<T> {
-    fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
+impl<A: Float, T>  PartialOrd<A> for HeapElement<A, T>
+where HeapElement<A, T>: PartialEq<A> {
+    fn partial_cmp(&self, other: &A) -> Option<Ordering> {
         self.distance.partial_cmp(other)
     }
 }
 
-impl<T> Eq for HeapElement<T> {}
+impl<A: Float, T>  Eq for HeapElement<A, T>  {}
 
-impl<T> PartialEq for HeapElement<T> {
+impl<A: Float, T>  PartialEq for HeapElement<A, T>  {
     fn eq(&self, other: &Self) -> bool {
         self.distance == other.distance
     }
 }
 
-impl<T> PartialEq<f64> for HeapElement<T> {
-    fn eq(&self, other: &f64) -> bool {
+impl<A: Float, T>  PartialEq<A> for HeapElement<A, T>  {
+    fn eq(&self, other: &A) -> bool {
         self.distance == *other
     }
 }
 
-impl<T> Into<(f64, T)> for HeapElement<T> {
-    fn into(self) -> (f64, T) {
+impl<A: Float, T>  Into<(A, T)> for HeapElement<A, T>  {
+    fn into(self) -> (A, T) {
         (self.distance, self.element)
     }
 }
