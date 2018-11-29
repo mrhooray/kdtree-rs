@@ -42,8 +42,8 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         KdTree {
             left: None,
             right: None,
-            dimensions: dimensions,
-            capacity: capacity,
+            dimensions,
+            capacity,
             size: 0,
             min_bounds: min_bounds.into_boxed_slice(),
             max_bounds: max_bounds.into_boxed_slice(),
@@ -71,7 +71,7 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             return Err(err);
         }
         let num = std::cmp::min(num, self.size);
-        if num <= 0 {
+        if num == 0 {
             return Ok(vec![]);
         }
         let mut pending = BinaryHeap::new();
@@ -108,7 +108,7 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         if let Err(err) = self.check_point(point) {
             return Err(err);
         }
-        if self.size <= 0 {
+        if self.size == 0 {
             return Ok(vec![]);
         }
         let mut pending = BinaryHeap::new();
@@ -215,10 +215,10 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             element: self,
         });
         Ok(NearestIter {
-            point: point,
-            pending: pending,
-            evaluated: evaluated,
-            distance: distance,
+            point,
+            pending,
+            evaluated,
+            distance,
         })
     }
 
