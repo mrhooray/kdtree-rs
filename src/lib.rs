@@ -53,15 +53,18 @@
 //! );
 //! ```
 
+#[macro_use]
+extern crate failure;
 extern crate num_traits;
-
 #[cfg(feature = "serialize")]
 #[cfg_attr(feature = "serialize", macro_use)]
 extern crate serde_derive;
 
 pub mod distance;
+mod error;
 mod heap_element;
 pub mod kdtree;
 mod util;
-pub use crate::kdtree::ErrorKind;
+
+pub use crate::error::{Error, ErrorKind};
 pub use crate::kdtree::KdTree;

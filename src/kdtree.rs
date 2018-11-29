@@ -2,6 +2,7 @@ use std::collections::BinaryHeap;
 
 use num_traits::{Float, One, Zero};
 
+use crate::error::{Error, ErrorKind};
 use crate::heap_element::HeapElement;
 use crate::util;
 
@@ -25,14 +26,7 @@ pub struct KdTree<A, T, U: AsRef<[A]>> {
     bucket: Option<Vec<T>>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ErrorKind {
-    WrongDimension,
-    NonFiniteCoordinate,
-    ZeroCapacity,
-}
-
-impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
+impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     pub fn new(dims: usize) -> Self {
         KdTree::new_with_capacity(dims, 2usize.pow(4))
     }
@@ -59,12 +53,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         self.size
     }
 
-    pub fn nearest<F>(
-        &self,
-        point: &[A],
-        num: usize,
-        distance: &F,
-    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    pub fn nearest<F>(&self, point: &[A], num: usize, distance: &F) -> Result<Vec<(A, &T)>, Error>
     where
         F: Fn(&[A], &[A]) -> A,
     {
@@ -102,7 +91,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             .collect())
     }
 
-    pub fn within<F>(&self, point: &[A], ridius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    pub fn within<F>(&self, point: &[A], ridius: A, distance: &F) -> Result<Vec<(A, &T)>, Error>
     where
         F: Fn(&[A], &[A]) -> A,
     {
@@ -202,7 +191,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         &'b self,
         point: &'a [A],
         distance: &'a F,
-    ) -> Result<NearestIter<'a, 'b, A, T, U, F>, ErrorKind>
+    ) -> Result<NearestIter<'a, 'b, A, T, U, F>, Error>
     where
         F: Fn(&[A], &[A]) -> A,
     {
@@ -223,17 +212,17 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         })
     }
 
-    pub fn add(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
+    pub fn add(&mut self, point: U, data: T) -> Result<(), Error> {
         if self.capacity == 0 {
-            return Err(ErrorKind::ZeroCapacity);
+            Err(ErrorKind::ZeroCapacity)?;
         }
         if let Err(err) = self.check_point(point.as_ref()) {
-            return Err(err);
+            Err(err)?;
         }
         self.add_unchecked(point, data)
     }
 
-    fn add_unchecked(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
+    fn add_unchecked(&mut self, point: U, data: T) -> Result<(), Error> {
         if self.is_leaf() {
             self.add_to_bucket(point, data);
             return Ok(());
@@ -325,13 +314,13 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             && self.right.is_none()
     }
 
-    fn check_point(&self, point: &[A]) -> Result<(), ErrorKind> {
+    fn check_point(&self, point: &[A]) -> Result<(), Error> {
         if self.dimensions != point.len() {
-            return Err(ErrorKind::WrongDimension);
+            Err(ErrorKind::WrongDimension)?;
         }
         for n in point {
             if !n.is_finite() {
-                return Err(ErrorKind::NonFiniteCoordinate);
+                Err(ErrorKind::NonFiniteCoordinate)?;
             }
         }
         Ok(())
@@ -396,23 +385,6 @@ where
                 }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
-    }
-}
-
-impl std::error::Error for ErrorKind {
-    fn description(&self) -> &str {
-        match *self {
-            ErrorKind::WrongDimension => "wrong dimension",
-            ErrorKind::NonFiniteCoordinate => "non-finite coordinate",
-            ErrorKind::ZeroCapacity => "zero capacity",
-        }
-    }
-}
-
-impl std::fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use std::error::Error;
-        write!(f, "KdTree error: {}", self.description())
     }
 }
 

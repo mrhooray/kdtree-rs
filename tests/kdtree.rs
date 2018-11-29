@@ -114,13 +114,18 @@ fn it_works_with_vec() {
     );
 }
 
+macro_rules! assert_err_kind {
+    ($expr: expr, $err: expr) => {{
+        let err = $expr.unwrap_err();
+        assert_eq!(*err.kind(), $err);
+    }};
+}
+
 #[test]
 fn handles_zero_capacity() {
     let mut kdtree = KdTree::new_with_capacity(2, 0);
-    assert_eq!(
-        kdtree.add(&POINT_A.0, POINT_A.1),
-        Err(ErrorKind::ZeroCapacity)
-    );
+
+    assert_err_kind!(kdtree.add(&POINT_A.0, POINT_A.1), ErrorKind::ZeroCapacity);
     assert_eq!(
         kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
         vec![]
@@ -131,13 +136,11 @@ fn handles_zero_capacity() {
 fn handles_wrong_dimension() {
     let point = ([0f64], 0f64);
     let mut kdtree = KdTree::new_with_capacity(2, 1);
-    assert_eq!(
-        kdtree.add(&point.0, point.1),
-        Err(ErrorKind::WrongDimension)
-    );
-    assert_eq!(
+
+    assert_err_kind!(kdtree.add(&point.0, point.1), ErrorKind::WrongDimension);
+    assert_err_kind!(
         kdtree.nearest(&point.0, 1, &squared_euclidean),
-        Err(ErrorKind::WrongDimension)
+        ErrorKind::WrongDimension
     );
 }
 
@@ -146,21 +149,22 @@ fn handles_non_finite_coordinate() {
     let point_a = ([std::f64::NAN, std::f64::NAN], 0f64);
     let point_b = ([std::f64::INFINITY, std::f64::INFINITY], 0f64);
     let mut kdtree = KdTree::new_with_capacity(2, 1);
-    assert_eq!(
+
+    assert_err_kind!(
         kdtree.add(&point_a.0, point_a.1),
-        Err(ErrorKind::NonFiniteCoordinate)
+        ErrorKind::NonFiniteCoordinate
     );
-    assert_eq!(
+    assert_err_kind!(
         kdtree.add(&point_b.0, point_b.1),
-        Err(ErrorKind::NonFiniteCoordinate)
+        ErrorKind::NonFiniteCoordinate
     );
-    assert_eq!(
+    assert_err_kind!(
         kdtree.nearest(&point_a.0, 1, &squared_euclidean),
-        Err(ErrorKind::NonFiniteCoordinate)
+        ErrorKind::NonFiniteCoordinate
     );
-    assert_eq!(
+    assert_err_kind!(
         kdtree.nearest(&point_b.0, 1, &squared_euclidean),
-        Err(ErrorKind::NonFiniteCoordinate)
+        ErrorKind::NonFiniteCoordinate
     );
 }
 
