@@ -20,8 +20,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::super::distance::squared_euclidean;
     use super::distance_to_space;
+    use crate::distance::squared_euclidean;
     use std::f64::{INFINITY, NEG_INFINITY};
 
     #[test]
