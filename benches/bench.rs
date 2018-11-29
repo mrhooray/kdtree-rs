@@ -1,11 +1,11 @@
 #![feature(test)]
 extern crate kdtree;
-extern crate test;
 extern crate rand;
+extern crate test;
 
-use test::Bencher;
-use kdtree::KdTree;
 use kdtree::distance::squared_euclidean;
+use kdtree::KdTree;
+use test::Bencher;
 
 fn rand_data() -> ([f64; 3], f64) {
     rand::random()
