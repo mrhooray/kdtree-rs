@@ -1,7 +1,9 @@
 //! # kdtree
-//! K-dimensional tree for Rust(bucket point-region implementation)
+//!
+//! K-dimensional tree for Rust (bucket point-region implementation)
 //!
 //! ## Usage
+//!
 //! ```
 //! use kdtree::KdTree;
 //! use kdtree::ErrorKind;
