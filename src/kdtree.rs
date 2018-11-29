@@ -428,26 +428,26 @@ mod tests {
     #[test]
     fn it_has_default_capacity() {
         let tree: KdTree<f64, u32, [f64; 2]> = KdTree::new(2);
-        assert!(tree.capacity == 2usize.pow(4));
+        assert_eq!(tree.capacity, 2_usize.pow(4));
     }
 
     #[test]
     fn it_holds_on_to_its_capacity_before_splitting() {
         let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
-        let capacity = 2usize.pow(4);
+        let capacity = 2_usize.pow(4);
         for _ in 0..capacity {
             let (pos, data) = random_point();
             tree.add(pos, data).unwrap();
         }
-        assert!(tree.size == capacity);
-        assert!(tree.size() == capacity);
+        assert_eq!(tree.size, capacity);
+        assert_eq!(tree.size(), capacity);
         assert!(tree.left.is_none() && tree.right.is_none());
         {
             let (pos, data) = random_point();
             tree.add(pos, data).unwrap();
         }
-        assert!(tree.size == capacity + 1);
-        assert!(tree.size() == capacity + 1);
+        assert_eq!(tree.size, capacity + 1);
+        assert_eq!(tree.size(), capacity + 1);
         assert!(tree.left.is_some() && tree.right.is_some());
     }
 
