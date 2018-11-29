@@ -61,5 +61,5 @@ pub mod distance;
 mod heap_element;
 pub mod kdtree;
 mod util;
-pub use kdtree::ErrorKind;
-pub use kdtree::KdTree;
+pub use crate::kdtree::ErrorKind;
+pub use crate::kdtree::KdTree;

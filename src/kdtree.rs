@@ -1,8 +1,8 @@
-use heap_element::HeapElement;
+use crate::heap_element::HeapElement;
 use num_traits::{Float, One, Zero};
 use std;
 use std::collections::BinaryHeap;
-use util;
+use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug)]
@@ -358,7 +358,7 @@ where
 {
     type Item = (A, &'b T);
     fn next(&mut self) -> Option<(A, &'b T)> {
-        use util::distance_to_space;
+        use crate::util::distance_to_space;
         let distance = self.distance;
         let point = self.point;
         while !self.pending.is_empty()
