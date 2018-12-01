@@ -31,7 +31,7 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
+impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     pub fn new(dims: usize) -> Self {
         KdTree::new_with_capacity(dims, 2usize.pow(4))
     }
