@@ -34,10 +34,10 @@ pub enum ErrorKind {
 
 impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     pub fn new(dims: usize) -> Self {
-        KdTree::new_with_capacity(dims, 2usize.pow(4))
+        KdTree::with_capacity(dims, 2_usize.pow(4))
     }
 
-    pub fn new_with_capacity(dimensions: usize, capacity: usize) -> Self {
+    pub fn with_capacity(dimensions: usize, capacity: usize) -> Self {
         let min_bounds = vec![A::infinity(); dimensions];
         let max_bounds = vec![A::neg_infinity(); dimensions];
         KdTree {
@@ -284,8 +284,8 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
                 self.split_value = Some(min + (max - min) / A::from(2.0).unwrap());
             }
         };
-        let mut left = Box::new(KdTree::new_with_capacity(self.dimensions, self.capacity));
-        let mut right = Box::new(KdTree::new_with_capacity(self.dimensions, self.capacity));
+        let mut left = Box::new(KdTree::with_capacity(self.dimensions, self.capacity));
+        let mut right = Box::new(KdTree::with_capacity(self.dimensions, self.capacity));
         while !points.is_empty() {
             let point = points.swap_remove(0);
             let data = bucket.swap_remove(0);
@@ -453,7 +453,7 @@ mod tests {
 
     #[test]
     fn no_items_can_be_added_to_a_zero_capacity_kdtree() {
-        let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new_with_capacity(2, 0);
+        let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::with_capacity(2, 0);
         let (pos, data) = random_point();
         let res = tree.add(pos, data);
         assert!(res.is_err());

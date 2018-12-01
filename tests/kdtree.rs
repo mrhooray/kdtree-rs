@@ -13,7 +13,7 @@ static POINT_D: ([f64; 2], usize) = ([3f64, 3f64], 3);
 fn it_works() {
     let dimensions = 2;
     let capacity_per_node = 2;
-    let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
 
     kdtree.add(&POINT_A.0, POINT_A.1).unwrap();
     kdtree.add(&POINT_B.0, POINT_B.1).unwrap();
@@ -76,7 +76,7 @@ fn it_works() {
 fn it_works_with_vec() {
     let dimensions = 2;
     let capacity_per_node = 2;
-    let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
 
     kdtree.add(vec![0.0; 2], 0).unwrap();
     kdtree.add(vec![1.0; 2], 1).unwrap();
@@ -116,7 +116,8 @@ fn it_works_with_vec() {
 
 #[test]
 fn handles_zero_capacity() {
-    let mut kdtree = KdTree::new_with_capacity(2, 0);
+    let mut kdtree = KdTree::with_capacity(2, 0);
+
     assert_eq!(
         kdtree.add(&POINT_A.0, POINT_A.1),
         Err(ErrorKind::ZeroCapacity)
@@ -130,7 +131,8 @@ fn handles_zero_capacity() {
 #[test]
 fn handles_wrong_dimension() {
     let point = ([0f64], 0f64);
-    let mut kdtree = KdTree::new_with_capacity(2, 1);
+    let mut kdtree = KdTree::with_capacity(2, 1);
+
     assert_eq!(
         kdtree.add(&point.0, point.1),
         Err(ErrorKind::WrongDimension)
@@ -145,7 +147,8 @@ fn handles_wrong_dimension() {
 fn handles_non_finite_coordinate() {
     let point_a = ([std::f64::NAN, std::f64::NAN], 0f64);
     let point_b = ([std::f64::INFINITY, std::f64::INFINITY], 0f64);
-    let mut kdtree = KdTree::new_with_capacity(2, 1);
+    let mut kdtree = KdTree::with_capacity(2, 1);
+
     assert_eq!(
         kdtree.add(&point_a.0, point_a.1),
         Err(ErrorKind::NonFiniteCoordinate)
@@ -166,7 +169,7 @@ fn handles_non_finite_coordinate() {
 
 #[test]
 fn handles_singularity() {
-    let mut kdtree = KdTree::new_with_capacity(2, 1);
+    let mut kdtree = KdTree::with_capacity(2, 1);
     kdtree.add(&POINT_A.0, POINT_A.1).unwrap();
     kdtree.add(&POINT_A.0, POINT_A.1).unwrap();
     kdtree.add(&POINT_A.0, POINT_A.1).unwrap();
@@ -189,7 +192,7 @@ fn handles_pending_order() {
     // Build a kd tree
     let dimensions = 1;
     let capacity_per_node = 2;
-    let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
 
     kdtree.add(&item1.0, item1.1).unwrap();
     kdtree.add(&item2.0, item2.1).unwrap();
@@ -274,7 +277,7 @@ fn handles_drops_correctly() {
         // Build a kd tree
         let dimensions = 2;
         let capacity_per_node = 1;
-        let mut kdtree = KdTree::new_with_capacity(dimensions, capacity_per_node);
+        let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
 
         kdtree.add(&item1.0, item1.1).unwrap();
         kdtree.add(&item2.0, item2.1).unwrap();
