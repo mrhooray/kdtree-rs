@@ -1,7 +1,9 @@
 //! # kdtree
-//! K-dimensional tree for Rust(bucket point-region implementation)
+//!
+//! K-dimensional tree for Rust (bucket point-region implementation)
 //!
 //! ## Usage
+//!
 //! ```
 //! use kdtree::KdTree;
 //! use kdtree::ErrorKind;
@@ -24,31 +26,31 @@
 //! assert_eq!(
 //!     kdtree.nearest(&a.0, 0, &squared_euclidean).unwrap(),
 //!     vec![]
-//!     );
+//! );
 //! assert_eq!(
 //!     kdtree.nearest(&a.0, 1, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &0)]
-//!     );
+//! );
 //! assert_eq!(
 //!     kdtree.nearest(&a.0, 2, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &0), (2f64, &1)]
-//!     );
+//! );
 //! assert_eq!(
 //!     kdtree.nearest(&a.0, 3, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &0), (2f64, &1), (8f64, &2)]
-//!     );
+//! );
 //! assert_eq!(
 //!     kdtree.nearest(&a.0, 4, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
-//!     );
+//! );
 //! assert_eq!(
 //!     kdtree.nearest(&a.0, 5, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
-//!     );
+//! );
 //! assert_eq!(
 //!     kdtree.nearest(&b.0, 4, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
-//!     );
+//! );
 //! ```
 
 extern crate num_traits;
@@ -57,9 +59,9 @@ extern crate num_traits;
 #[cfg_attr(feature = "serialize", macro_use)]
 extern crate serde_derive;
 
-pub mod kdtree;
 pub mod distance;
 mod heap_element;
+pub mod kdtree;
 mod util;
-pub use kdtree::KdTree;
-pub use kdtree::ErrorKind;
+pub use crate::kdtree::ErrorKind;
+pub use crate::kdtree::KdTree;

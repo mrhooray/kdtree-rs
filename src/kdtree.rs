@@ -1,8 +1,9 @@
-use num_traits::{Float, Zero, One};
-use std;
 use std::collections::BinaryHeap;
-use ::heap_element::HeapElement;
-use ::util;
+
+use num_traits::{Float, One, Zero};
+
+use crate::heap_element::HeapElement;
+use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug)]
@@ -42,8 +43,8 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         KdTree {
             left: None,
             right: None,
-            dimensions: dimensions,
-            capacity: capacity,
+            dimensions,
+            capacity,
             size: 0,
             min_bounds: min_bounds.into_boxed_slice(),
             max_bounds: max_bounds.into_boxed_slice(),
@@ -58,18 +59,20 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         self.size
     }
 
-    pub fn nearest<F>(&self,
-                      point: &[A],
-                      num: usize,
-                      distance: &F)
-                      -> Result<Vec<(A, &T)>, ErrorKind>
-        where F: Fn(&[A], &[A]) -> A
+    pub fn nearest<F>(
+        &self,
+        point: &[A],
+        num: usize,
+        distance: &F,
+    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
     {
         if let Err(err) = self.check_point(point) {
             return Err(err);
         }
         let num = std::cmp::min(num, self.size);
-        if num <= 0 {
+        if num == 0 {
             return Ok(vec![]);
         }
         let mut pending = BinaryHeap::new();
@@ -78,25 +81,35 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             distance: A::zero(),
             element: self,
         });
-        while !pending.is_empty() &&
-              (evaluated.len() < num ||
-               (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance)) {
-            self.nearest_step(point, num, A::infinity(), distance, &mut pending, &mut evaluated);
+        while !pending.is_empty()
+            && (evaluated.len() < num
+                || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
+        {
+            self.nearest_step(
+                point,
+                num,
+                A::infinity(),
+                distance,
+                &mut pending,
+                &mut evaluated,
+            );
         }
-        Ok(evaluated.into_sorted_vec().into_iter().take(num).map(Into::into).collect())
+        Ok(evaluated
+            .into_sorted_vec()
+            .into_iter()
+            .take(num)
+            .map(Into::into)
+            .collect())
     }
 
-    pub fn within<F>(&self,
-                     point: &[A],
-                     ridius: A,
-                     distance: &F)
-                     -> Result<Vec<(A, &T)>, ErrorKind>
-        where F: Fn(&[A], &[A]) -> A
+    pub fn within<F>(&self, point: &[A], ridius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
     {
         if let Err(err) = self.check_point(point) {
             return Err(err);
         }
-        if self.size <= 0 {
+        if self.size == 0 {
             return Ok(vec![]);
         }
         let mut pending = BinaryHeap::new();
@@ -106,24 +119,32 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             element: self,
         });
         while !pending.is_empty() && (-pending.peek().unwrap().distance <= ridius) {
-            self.nearest_step(point,
-                              self.size,
-                              ridius,
-                              distance,
-                              &mut pending,
-                              &mut evaluated);
+            self.nearest_step(
+                point,
+                self.size,
+                ridius,
+                distance,
+                &mut pending,
+                &mut evaluated,
+            );
         }
-        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
+        Ok(evaluated
+            .into_sorted_vec()
+            .into_iter()
+            .map(Into::into)
+            .collect())
     }
 
-    fn nearest_step<'b, F>(&self,
-                           point: &[A],
-                           num: usize,
-                           max_dist: A,
-                           distance: &F,
-                           pending: &mut BinaryHeap<HeapElement<A, &'b Self>>,
-                           evaluated: &mut BinaryHeap<HeapElement<A, &'b T>>)
-        where F: Fn(&[A], &[A]) -> A
+    fn nearest_step<'b, F>(
+        &self,
+        point: &[A],
+        num: usize,
+        max_dist: A,
+        distance: &F,
+        pending: &mut BinaryHeap<HeapElement<A, &'b Self>>,
+        evaluated: &mut BinaryHeap<HeapElement<A, &'b T>>,
+    ) where
+        F: Fn(&[A], &[A]) -> A,
     {
         let mut curr = &*pending.pop().unwrap().element;
         let evaluated_dist = if evaluated.len() < num {
@@ -145,13 +166,15 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
                 candidate = curr.left.as_ref().unwrap();
                 curr = curr.right.as_ref().unwrap();
             }
-            let candidate_to_space = util::distance_to_space(point,
-                                                             &*candidate.min_bounds,
-                                                             &*candidate.max_bounds,
-                                                             distance);
+            let candidate_to_space = util::distance_to_space(
+                point,
+                &*candidate.min_bounds,
+                &*candidate.max_bounds,
+                distance,
+            );
             if candidate_to_space <= evaluated_dist {
                 pending.push(HeapElement {
-                    distance: candidate_to_space * - A::one(),
+                    distance: candidate_to_space * -A::one(),
                     element: &**candidate,
                 });
             }
@@ -159,11 +182,9 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
 
         let points = curr.points.as_ref().unwrap().iter();
         let bucket = curr.bucket.as_ref().unwrap().iter();
-        let iter = points.zip(bucket).map(|(p, d)| {
-            HeapElement {
-                distance: distance(point, p.as_ref()),
-                element: d,
-            }
+        let iter = points.zip(bucket).map(|(p, d)| HeapElement {
+            distance: distance(point, p.as_ref()),
+            element: d,
         });
         for element in iter {
             if element <= max_dist {
@@ -177,11 +198,13 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         }
     }
 
-    pub fn iter_nearest<'a, 'b, F>(&'b self,
-                                   point: &'a [A],
-                                   distance: &'a F)
-                                   -> Result<NearestIter<'a, 'b, A, T, U, F>, ErrorKind>
-        where F: Fn(&[A], &[A]) -> A
+    pub fn iter_nearest<'a, 'b, F>(
+        &'b self,
+        point: &'a [A],
+        distance: &'a F,
+    ) -> Result<NearestIter<'a, 'b, A, T, U, F>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
     {
         if let Err(err) = self.check_point(point) {
             return Err(err);
@@ -193,10 +216,10 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             element: self,
         });
         Ok(NearestIter {
-            point: point,
-            pending: pending,
-            evaluated: evaluated,
-            distance: distance,
+            point,
+            pending,
+            evaluated,
+            distance,
         })
     }
 
@@ -224,7 +247,6 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         };
         next.unwrap().add_unchecked(point, data)
     }
-
 
     fn add_to_bucket(&mut self, point: U, data: T) {
         self.extend(point.as_ref());
@@ -295,8 +317,12 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     }
 
     fn is_leaf(&self) -> bool {
-        self.bucket.is_some() && self.points.is_some() && self.split_value.is_none() &&
-        self.split_dimension.is_none() && self.left.is_none() && self.right.is_none()
+        self.bucket.is_some()
+            && self.points.is_some()
+            && self.split_value.is_none()
+            && self.split_dimension.is_none()
+            && self.left.is_none()
+            && self.right.is_none()
     }
 
     fn check_point(&self, point: &[A]) -> Result<(), ErrorKind> {
@@ -312,24 +338,35 @@ impl<A: Float + Zero + One + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     }
 }
 
-pub struct NearestIter<'a, 'b, A: 'a + 'b + Float, T: 'b, U: 'b + AsRef<[A]>, F: 'a + Fn(&[A], &[A]) -> A> {
+pub struct NearestIter<
+    'a,
+    'b,
+    A: 'a + 'b + Float,
+    T: 'b,
+    U: 'b + AsRef<[A]>,
+    F: 'a + Fn(&[A], &[A]) -> A,
+> {
     point: &'a [A],
     pending: BinaryHeap<HeapElement<A, &'b KdTree<A, T, U>>>,
     evaluated: BinaryHeap<HeapElement<A, &'b T>>,
     distance: &'a F,
 }
 
-impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator for NearestIter<'a, 'b, A, T, U, F>
-    where F: Fn(&[A], &[A]) -> A
+impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
+    for NearestIter<'a, 'b, A, T, U, F>
+where
+    F: Fn(&[A], &[A]) -> A,
 {
     type Item = (A, &'b T);
     fn next(&mut self) -> Option<(A, &'b T)> {
         use util::distance_to_space;
+
         let distance = self.distance;
         let point = self.point;
-        while !self.pending.is_empty() &&
-              (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance) >=
-               -self.pending.peek().unwrap().distance) {
+        while !self.pending.is_empty()
+            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance)
+                >= -self.pending.peek().unwrap().distance)
+        {
             let mut curr = &*self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
                 let candidate;
@@ -341,22 +378,22 @@ impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator f
                     curr = curr.right.as_ref().unwrap();
                 }
                 self.pending.push(HeapElement {
-                    distance: -distance_to_space(point,
-                                                 &*candidate.min_bounds,
-                                                 &*candidate.max_bounds,
-                                                 distance),
+                    distance: -distance_to_space(
+                        point,
+                        &*candidate.min_bounds,
+                        &*candidate.max_bounds,
+                        distance,
+                    ),
                     element: &**candidate,
                 });
             }
             let points = curr.points.as_ref().unwrap().iter();
             let bucket = curr.bucket.as_ref().unwrap().iter();
-            self.evaluated.extend(points.zip(bucket).map(|(p, d)| {
-                HeapElement {
+            self.evaluated
+                .extend(points.zip(bucket).map(|(p, d)| HeapElement {
                     distance: -distance(point, p.as_ref()),
                     element: d,
-                }
-            }));
-
+                }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
     }
@@ -391,26 +428,26 @@ mod tests {
     #[test]
     fn it_has_default_capacity() {
         let tree: KdTree<f64, u32, [f64; 2]> = KdTree::new(2);
-        assert!(tree.capacity == 2usize.pow(4));
+        assert_eq!(tree.capacity, 2_usize.pow(4));
     }
 
     #[test]
     fn it_holds_on_to_its_capacity_before_splitting() {
         let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
-        let capacity = 2usize.pow(4);
+        let capacity = 2_usize.pow(4);
         for _ in 0..capacity {
             let (pos, data) = random_point();
             tree.add(pos, data).unwrap();
         }
-        assert!(tree.size == capacity);
-        assert!(tree.size() == capacity);
+        assert_eq!(tree.size, capacity);
+        assert_eq!(tree.size(), capacity);
         assert!(tree.left.is_none() && tree.right.is_none());
         {
             let (pos, data) = random_point();
             tree.add(pos, data).unwrap();
         }
-        assert!(tree.size == capacity + 1);
-        assert!(tree.size() == capacity + 1);
+        assert_eq!(tree.size, capacity + 1);
+        assert_eq!(tree.size(), capacity + 1);
         assert!(tree.left.is_some() && tree.right.is_some());
     }
 

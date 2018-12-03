@@ -1,7 +1,7 @@
 extern crate kdtree;
 
-use kdtree::KdTree;
 use kdtree::distance::squared_euclidean;
+use kdtree::KdTree;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static POINT_A: ([f64; 2], usize) = ([0f64, 0f64], 0);
@@ -26,7 +26,6 @@ fn it_works() {
     kdtree.add(&POINT_C.0, POINT_C.1).unwrap();
     kdtree.add(&POINT_D.0, POINT_D.1).unwrap();
 
-
     kdtree.nearest(&POINT_A.0, 0, &new_dist).unwrap();
     assert_eq!(0, count.swap(0, Ordering::SeqCst));
 
@@ -47,7 +46,6 @@ fn it_works() {
 
     kdtree.nearest(&POINT_B.0, 4, &new_dist).unwrap();
     assert_eq!(6, count.swap(0, Ordering::SeqCst));
-
 
     kdtree.within(&POINT_A.0, 0.0, &new_dist).unwrap();
     assert_eq!(2, count.swap(0, Ordering::SeqCst));
