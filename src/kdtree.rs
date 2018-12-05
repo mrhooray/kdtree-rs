@@ -102,7 +102,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             .collect())
     }
 
-    pub fn within<F>(&self, point: &[A], ridius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
     {
@@ -118,11 +118,11 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             distance: A::zero(),
             element: self,
         });
-        while !pending.is_empty() && (-pending.peek().unwrap().distance <= ridius) {
+        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
             self.nearest_step(
                 point,
                 self.size,
-                ridius,
+                radius,
                 distance,
                 &mut pending,
                 &mut evaluated,
