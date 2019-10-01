@@ -223,6 +223,31 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         })
     }
 
+    pub fn iter_nearest_mut<'a, 'b, F>(
+        &'b mut self,
+        point: &'a [A],
+        distance: &'a F,
+    ) -> Result<NearestIterMut<'a, 'b, A, T, U, F>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        if let Err(err) = self.check_point(point) {
+            return Err(err);
+        }
+        let mut pending = BinaryHeap::new();
+        let evaluated = BinaryHeap::<HeapElement<A, &mut T>>::new();
+        pending.push(HeapElement {
+            distance: A::zero(),
+            element: self,
+        });
+        Ok(NearestIterMut {
+            point,
+            pending,
+            evaluated,
+            distance,
+        })
+    }
+
     pub fn add(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
         if self.capacity == 0 {
             return Err(ErrorKind::ZeroCapacity);
@@ -389,6 +414,67 @@ where
             }
             let points = curr.points.as_ref().unwrap().iter();
             let bucket = curr.bucket.as_ref().unwrap().iter();
+            self.evaluated
+                .extend(points.zip(bucket).map(|(p, d)| HeapElement {
+                    distance: -distance(point, p.as_ref()),
+                    element: d,
+                }));
+        }
+        self.evaluated.pop().map(|x| (-x.distance, x.element))
+    }
+}
+
+pub struct NearestIterMut<
+    'a,
+    'b,
+    A: 'a + 'b + Float,
+    T: 'b,
+    U: 'b + AsRef<[A]>,
+    F: 'a + Fn(&[A], &[A]) -> A,
+> {
+    point: &'a [A],
+    pending: BinaryHeap<HeapElement<A, &'b mut KdTree<A, T, U>>>,
+    evaluated: BinaryHeap<HeapElement<A, &'b mut T>>,
+    distance: &'a F,
+}
+
+impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
+    for NearestIterMut<'a, 'b, A, T, U, F>
+where
+    F: Fn(&[A], &[A]) -> A,
+{
+    type Item = (A, &'b mut T);
+    fn next(&mut self) -> Option<(A, &'b mut T)> {
+        use util::distance_to_space;
+
+        let distance = self.distance;
+        let point = self.point;
+        while !self.pending.is_empty()
+            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance)
+                >= -self.pending.peek().unwrap().distance)
+        {
+            let mut curr = &mut *self.pending.pop().unwrap().element;
+            while !curr.is_leaf() {
+                let candidate;
+                if curr.belongs_in_left(point) {
+                    candidate = curr.right.as_mut().unwrap();
+                    curr = curr.left.as_mut().unwrap();
+                } else {
+                    candidate = curr.left.as_mut().unwrap();
+                    curr = curr.right.as_mut().unwrap();
+                }
+                self.pending.push(HeapElement {
+                    distance: -distance_to_space(
+                        point,
+                        &*candidate.min_bounds,
+                        &*candidate.max_bounds,
+                        distance,
+                    ),
+                    element: &mut **candidate,
+                });
+            }
+            let points = curr.points.as_ref().unwrap().iter();
+            let bucket = curr.bucket.as_mut().unwrap().iter_mut();
             self.evaluated
                 .extend(points.zip(bucket).map(|(p, d)| HeapElement {
                     distance: -distance(point, p.as_ref()),
