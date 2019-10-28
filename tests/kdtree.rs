@@ -70,6 +70,21 @@ fn it_works() {
             .collect::<Vec<_>>(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
     );
+
+    let iter = kdtree
+        .iter_nearest_mut(&POINT_A.0, &squared_euclidean)
+        .unwrap()
+        .next()
+        .unwrap();
+    *iter.1 = 10;
+
+    assert_eq!(
+        kdtree
+            .iter_nearest(&POINT_A.0, &squared_euclidean)
+            .unwrap()
+            .collect::<Vec<_>>(),
+        vec![(0f64, &10), (2f64, &1), (8f64, &2), (18f64, &3)]
+    );
 }
 
 #[test]
