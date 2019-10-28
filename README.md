@@ -1,5 +1,5 @@
 # kdtree [![Build Status](https://travis-ci.org/mrhooray/kdtree-rs.svg?branch=master)](https://travis-ci.org/mrhooray/kdtree-rs)
-> K-dimensional tree in Rust for fast geospatial indexing and lookup
+> K-dimensional tree in Rust for fast geospatial indexing and nearest neighbors lookup
 
 * [Crate](https://crates.io/crates/kdtree)
 * [Documentation](https://docs.rs/kdtree)
