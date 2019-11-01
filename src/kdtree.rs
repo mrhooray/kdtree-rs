@@ -6,7 +6,7 @@ use crate::heap_element::HeapElement;
 use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct KdTree<A, T, U: AsRef<[A]>> {
     // node
     left: Option<Box<KdTree<A, T, U>>>,
@@ -513,8 +513,19 @@ mod tests {
 
     #[test]
     fn it_has_default_capacity() {
-        let tree: KdTree<f64, u32, [f64; 2]> = KdTree::new(2);
+        let tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
         assert_eq!(tree.capacity, 2_usize.pow(4));
+    }
+
+    #[test]
+    fn it_can_be_cloned() {
+        let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
+        let (pos, data) = random_point();
+        tree.add(pos, data).unwrap();
+        let mut cloned_tree = tree.clone();
+        cloned_tree.add(pos, data).unwrap();
+        assert_eq!(tree.size(), 1);
+        assert_eq!(cloned_tree.size(), 2);
     }
 
     #[test]
