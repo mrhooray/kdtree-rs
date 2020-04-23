@@ -4,9 +4,9 @@
 
 use num_traits::Float;
 
-/// Returns the squared euclidean distance between two points, when you only
-/// need to compare distances, rhather than having the exact distance between
-/// the points this metric is benefitial because it avoids the expensive square
+/// Returns the squared euclidean distance between two points. When you only
+/// need to compare distances, rather than having the exact distance between
+/// the points, this metric is benefitial because it avoids the expensive square
 /// root computation.
 ///
 /// # Examples
