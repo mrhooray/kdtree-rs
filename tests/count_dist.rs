@@ -27,47 +27,47 @@ fn it_works() {
     kdtree.add(&POINT_D.0, POINT_D.1).unwrap();
 
     kdtree.nearest(&POINT_A.0, 0, &new_dist).unwrap();
-    assert_eq!(0, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 0);
 
     kdtree.nearest(&POINT_A.0, 1, &new_dist).unwrap();
-    assert_eq!(2, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 2);
 
     kdtree.nearest(&POINT_A.0, 2, &new_dist).unwrap();
-    assert_eq!(4, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 4);
 
     kdtree.nearest(&POINT_A.0, 3, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 6);
 
     kdtree.nearest(&POINT_A.0, 4, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 6);
 
     kdtree.nearest(&POINT_A.0, 5, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 6);
 
     kdtree.nearest(&POINT_B.0, 4, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 6);
 
     kdtree.within(&POINT_A.0, 0.0, &new_dist).unwrap();
-    assert_eq!(2, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 2);
 
     kdtree.within(&POINT_B.0, 1.0, &new_dist).unwrap();
-    assert_eq!(3, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 3);
 
     kdtree.within(&POINT_B.0, 2.0, &new_dist).unwrap();
-    assert_eq!(6, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 6);
 
     let mut iter = kdtree.iter_nearest(&POINT_A.0, &new_dist).unwrap();
-    assert_eq!(0, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 0);
 
     iter.next().unwrap();
-    assert_eq!(2, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 2);
 
     iter.next().unwrap();
-    assert_eq!(2, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 2);
 
     iter.next().unwrap();
-    assert_eq!(2, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 2);
 
     iter.next().unwrap();
-    assert_eq!(0, count.swap(0, Ordering::SeqCst));
+    assert_eq!(count.swap(0, Ordering::SeqCst), 0);
 }
