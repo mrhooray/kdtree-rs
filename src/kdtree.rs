@@ -147,14 +147,14 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         F: Fn(&[A], &[A]) -> A,
     {
         let mut curr = &*pending.pop().unwrap().element;
-        let evaluated_dist = if evaluated.len() < num {
-            A::infinity()
+        debug_assert!(evaluated.len() <= num);
+        let evaluated_dist = if evaluated.len() == num {
+            // We only care about the nearest `num` points, so if we already have `num` points,
+            // any more point we add to `evaluated` must be nearer then one of the point already in
+            // `evaluated`.
+            max_dist.min(evaluated.peek().unwrap().distance)
         } else {
-            if max_dist < evaluated.peek().unwrap().distance {
-                max_dist
-            } else {
-                evaluated.peek().unwrap().distance
-            }
+            max_dist
         };
 
         while !curr.is_leaf() {
