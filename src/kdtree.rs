@@ -63,6 +63,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         &self,
         point: &[A],
         num: usize,
+        radius: A,
         distance: &F,
     ) -> Result<Vec<(A, &T)>, ErrorKind>
     where
@@ -88,7 +89,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             self.nearest_step(
                 point,
                 num,
-                A::infinity(),
+                radius,
                 distance,
                 &mut pending,
                 &mut evaluated,
@@ -388,6 +389,7 @@ where
 
         let distance = self.distance;
         let point = self.point;
+        
         while !self.pending.is_empty()
             && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance)
                 >= -self.pending.peek().unwrap().distance)
