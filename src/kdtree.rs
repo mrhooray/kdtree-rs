@@ -103,37 +103,12 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             .collect())
     }
 
+    #[deprecated(since="0.7.0", note="please use `nearest` instead with num equals to the size of points")]
     pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        if let Err(err) = self.check_point(point) {
-            return Err(err);
-        }
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
-        let mut pending = BinaryHeap::new();
-        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
-        pending.push(HeapElement {
-            distance: A::zero(),
-            element: self,
-        });
-        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
-            self.nearest_step(
-                point,
-                self.size,
-                radius,
-                distance,
-                &mut pending,
-                &mut evaluated,
-            );
-        }
-        Ok(evaluated
-            .into_sorted_vec()
-            .into_iter()
-            .map(Into::into)
-            .collect())
+        self.nearest(point, self.size, radius, distance)
     }
 
     fn nearest_step<'b, F>(
