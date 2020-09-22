@@ -52,7 +52,7 @@
 //!     vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
 //! );
 //! ```
-
+#![feature(vec_remove_item)]
 extern crate num_traits;
 
 #[cfg(feature = "serialize")]

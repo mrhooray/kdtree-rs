@@ -7,7 +7,7 @@ use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
-pub struct KdTree<A, T, U: AsRef<[A]>> {
+pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]>+ std::cmp::PartialEq> {
     // node
     left: Option<Box<KdTree<A, T, U>>>,
     right: Option<Box<KdTree<A, T, U>>>,
@@ -32,7 +32,7 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
+impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
     }
@@ -288,6 +288,25 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         }
     }
 
+    pub fn remove(&mut self, point: &U, data: &T) -> Result<(), ErrorKind> {
+        if let Err(err) = self.check_point(point.as_ref()) {
+            return Err(err);
+        }
+        if let (Some(points), Some(bucket)) = (self.points.take(), self.bucket.take()) {
+            self.points = Some(points.into_iter().filter(|x| x != point).collect());
+            self.bucket = Some(bucket.into_iter().filter(|x| x != data).collect());
+        } else {
+            if self.right.is_some() {
+                self.right.as_mut().unwrap().remove(point, data)?;
+            }
+            if self.left.is_some() {
+                self.left.as_mut().unwrap().remove(point, data)?;
+            }
+        }
+        self.size -= 1;
+        Ok(())
+    }
+
     fn split(&mut self, mut points: Vec<U>, mut bucket: Vec<T>) {
         let mut max = A::zero();
         for dim in 0..self.dimensions {
@@ -367,8 +386,8 @@ pub struct NearestIter<
     'a,
     'b,
     A: 'a + 'b + Float,
-    T: 'b,
-    U: 'b + AsRef<[A]>,
+    T: 'b + PartialEq,
+    U: 'b + AsRef<[A]> + std::cmp::PartialEq,
     F: 'a + Fn(&[A], &[A]) -> A,
 > {
     point: &'a [A],
@@ -380,7 +399,7 @@ pub struct NearestIter<
 impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
     for NearestIter<'a, 'b, A, T, U, F>
 where
-    F: Fn(&[A], &[A]) -> A,
+    F: Fn(&[A], &[A]) -> A, U: PartialEq, T: PartialEq
 {
     type Item = (A, &'b T);
     fn next(&mut self) -> Option<(A, &'b T)> {
@@ -428,8 +447,8 @@ pub struct NearestIterMut<
     'a,
     'b,
     A: 'a + 'b + Float,
-    T: 'b,
-    U: 'b + AsRef<[A]>,
+    T: 'b + PartialEq,
+    U: 'b + AsRef<[A]> + PartialEq,
     F: 'a + Fn(&[A], &[A]) -> A,
 > {
     point: &'a [A],
@@ -441,7 +460,7 @@ pub struct NearestIterMut<
 impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
     for NearestIterMut<'a, 'b, A, T, U, F>
 where
-    F: Fn(&[A], &[A]) -> A,
+    F: Fn(&[A], &[A]) -> A, U: PartialEq, T: PartialEq
 {
     type Item = (A, &'b mut T);
     fn next(&mut self) -> Option<(A, &'b mut T)> {
