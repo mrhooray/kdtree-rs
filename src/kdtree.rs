@@ -292,18 +292,37 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         if let Err(err) = self.check_point(point.as_ref()) {
             return Err(err);
         }
-        if let (Some(points), Some(bucket)) = (self.points.take(), self.bucket.take()) {
-            self.points = Some(points.into_iter().filter(|x| x != point).collect());
-            self.bucket = Some(bucket.into_iter().filter(|x| x != data).collect());
-        } else {
-            if self.right.is_some() {
-                self.right.as_mut().unwrap().remove(point, data)?;
+        if let (Some(mut points), Some(mut bucket)) = (self.points.take(), self.bucket.take()) {
+            let point_pos = points.iter().position(|x| x == point);
+            let bucket_pos = bucket.iter().position(|x| x == data);
+            match (point_pos, bucket_pos) {
+                (Some(p_index), Some(b_index)) => {
+                    if p_index == b_index {
+                        points.remove(p_index);
+                        bucket.remove(b_index);
+                        self.size -= 1;
+                    }
+                },
+                _ => {},
             }
-            if self.left.is_some() {
-                self.left.as_mut().unwrap().remove(point, data)?;
+            self.points = Some(points);
+            self.bucket = Some(bucket);
+        } else {
+            if let Some(right) = self.right.as_mut() {
+                let size = right.size();
+                right.remove(point, data)?;
+                if size != right.size() {
+                    self.size -= 1;
+                }
+            }
+            if let Some(left) = self.left.as_mut() {
+                let size = left.size();
+                left.remove(point, data)?;
+                if size != left.size() {
+                    self.size -= 1;
+                }
             }
         }
-        self.size -= 1;
         Ok(())
     }
 

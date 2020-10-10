@@ -341,3 +341,31 @@ fn handles_remove_correctly() {
         vec![(16.0, &4), (2401.0, &2)]
     );
 }
+
+#[test]
+fn handles_remove_no_match() {
+    let item1 = ([0f64], 1);
+    let item2 = ([100f64], 2);
+    let item3 = ([45f64], 3);
+    let item4 = ([55f64], 4);
+
+    // Build a kd tree
+    let dimensions = 1;
+    let capacity_per_node = 2;
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
+
+    kdtree.add(&item1.0, item1.1).unwrap();
+    kdtree.add(&item2.0, item2.1).unwrap();
+    kdtree.add(&item3.0, item3.1).unwrap();
+    kdtree.add(&item4.0, item4.1).unwrap();
+
+    kdtree.remove(&&[1f64], &2).unwrap();
+    assert_eq!(
+        kdtree.size(),
+        4
+    );
+    assert_eq!(
+        kdtree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
+        vec![(16.0, &4), (36.0, &3)]
+    );
+}
