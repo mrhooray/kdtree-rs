@@ -288,42 +288,39 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         }
     }
 
-    pub fn remove(&mut self, point: &U, data: &T) -> Result<(), ErrorKind> {
+    pub fn remove(&mut self, point: &U, data: &T) -> Result<usize, ErrorKind> {
+        let mut removed = 0;
         if let Err(err) = self.check_point(point.as_ref()) {
             return Err(err);
         }
         if let (Some(mut points), Some(mut bucket)) = (self.points.take(), self.bucket.take()) {
-            let point_pos = points.iter().position(|x| x == point);
-            let bucket_pos = bucket.iter().position(|x| x == data);
-            match (point_pos, bucket_pos) {
-                (Some(p_index), Some(b_index)) => {
-                    if p_index == b_index {
-                        points.remove(p_index);
-                        bucket.remove(b_index);
-                        self.size -= 1;
-                    }
-                },
-                _ => {},
+            while let Some(p_index) = points.iter().position(|x| x == point) {
+                if &bucket[p_index] == data {
+                    points.remove(p_index);
+                    bucket.remove(p_index);
+                    removed += 1;
+                    self.size -= 1;
+                }
             }
             self.points = Some(points);
             self.bucket = Some(bucket);
         } else {
             if let Some(right) = self.right.as_mut() {
-                let size = right.size();
-                right.remove(point, data)?;
-                if size != right.size() {
-                    self.size -= 1;
+                let right_removed = right.remove(point, data)?;
+                if right_removed > 0 {
+                    self.size -= right_removed;
+                    removed += right_removed;
                 }
             }
             if let Some(left) = self.left.as_mut() {
-                let size = left.size();
-                left.remove(point, data)?;
-                if size != left.size() {
-                    self.size -= 1;
+                let left_removed = left.remove(point, data)?;
+                if left_removed > 0 {
+                    self.size -= left_removed;
+                    removed += left_removed;
                 }
             }
         }
-        Ok(())
+        Ok(removed)
     }
 
     fn split(&mut self, mut points: Vec<U>, mut bucket: Vec<T>) {
