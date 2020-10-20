@@ -274,6 +274,13 @@ fn handles_drops_correctly() {
 
     // Mock up a structure to keep track of Drops
     struct Test(Arc<Mutex<i32>>);
+
+    impl PartialEq<Test> for Test {
+        fn eq(&self, other: &Test) -> bool {
+            *self.0.lock().unwrap() == *other.0.lock().unwrap()
+        }
+    }
+
     impl Drop for Test {
         fn drop(&mut self) {
             let mut drop_counter = self.0.lock().unwrap();
@@ -305,4 +312,104 @@ fn handles_drops_correctly() {
 
     // Post-drop check
     assert_eq!(*drop_counter.lock().unwrap(), 4);
+}
+
+#[test]
+fn handles_remove_correctly() {
+    let item1 = ([0f64], 1);
+    let item2 = ([100f64], 2);
+    let item3 = ([45f64], 3);
+    let item4 = ([55f64], 4);
+
+    // Build a kd tree
+    let dimensions = 1;
+    let capacity_per_node = 2;
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
+
+    kdtree.add(&item1.0, item1.1).unwrap();
+    kdtree.add(&item2.0, item2.1).unwrap();
+    kdtree.add(&item3.0, item3.1).unwrap();
+    kdtree.add(&item4.0, item4.1).unwrap();
+
+    let num_removed = kdtree.remove(&&item3.0, &item3.1).unwrap();
+    assert_eq!(
+        kdtree.size(),
+        3
+    );
+    assert_eq!(
+        num_removed,
+        1
+    );
+    assert_eq!(
+        kdtree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
+        vec![(16.0, &4), (2401.0, &2)]
+    );
+}
+
+#[test]
+fn handles_remove_multiple_match() {
+    let item1 = ([0f64], 1);
+    let item2 = ([0f64], 1);
+    let item3 = ([100f64], 2);
+    let item4 = ([45f64], 3);
+
+    // Build a kd tree
+    let dimensions = 1;
+    let capacity_per_node = 2;
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
+
+    kdtree.add(&item1.0, item1.1).unwrap();
+    kdtree.add(&item2.0, item2.1).unwrap();
+    kdtree.add(&item3.0, item3.1).unwrap();
+    kdtree.add(&item4.0, item4.1).unwrap();
+
+    assert_eq!(
+        kdtree.size(),
+        4
+    );
+    let num_removed = kdtree.remove(&&[0f64], &1).unwrap();
+    assert_eq!(
+        kdtree.size(),
+        2
+    );
+    assert_eq!(
+        num_removed,
+        2
+    );
+    assert_eq!(
+        kdtree.nearest(&[45f64], 1, &squared_euclidean).unwrap(),
+        vec![(0.0, &3)]
+    );
+}
+
+#[test]
+fn handles_remove_no_match() {
+    let item1 = ([0f64], 1);
+    let item2 = ([100f64], 2);
+    let item3 = ([45f64], 3);
+    let item4 = ([55f64], 4);
+
+    // Build a kd tree
+    let dimensions = 1;
+    let capacity_per_node = 2;
+    let mut kdtree = KdTree::with_capacity(dimensions, capacity_per_node);
+
+    kdtree.add(&item1.0, item1.1).unwrap();
+    kdtree.add(&item2.0, item2.1).unwrap();
+    kdtree.add(&item3.0, item3.1).unwrap();
+    kdtree.add(&item4.0, item4.1).unwrap();
+
+    let num_removed = kdtree.remove(&&[1f64], &2).unwrap();
+    assert_eq!(
+        kdtree.size(),
+        4
+    );
+    assert_eq!(
+        num_removed,
+        0
+    );
+    assert_eq!(
+        kdtree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
+        vec![(16.0, &4), (36.0, &3)]
+    );
 }
