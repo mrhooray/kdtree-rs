@@ -7,7 +7,7 @@ use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
-pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]>+ std::cmp::PartialEq> {
+pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> {
     // node
     left: Option<Box<KdTree<A, T, U>>>,
     right: Option<Box<KdTree<A, T, U>>>,
@@ -33,10 +33,12 @@ pub enum ErrorKind {
 }
 
 impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
+    /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
     }
 
+    /// Create a new KD tree, specifying the dimension size of each point and the capacity of leaf nodes
     pub fn with_capacity(dimensions: usize, capacity: usize) -> Self {
         let min_bounds = vec![A::infinity(); dimensions];
         let max_bounds = vec![A::neg_infinity(); dimensions];
@@ -415,7 +417,9 @@ pub struct NearestIter<
 impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
     for NearestIter<'a, 'b, A, T, U, F>
 where
-    F: Fn(&[A], &[A]) -> A, U: PartialEq, T: PartialEq
+    F: Fn(&[A], &[A]) -> A,
+    U: PartialEq,
+    T: PartialEq,
 {
     type Item = (A, &'b T);
     fn next(&mut self) -> Option<(A, &'b T)> {
@@ -476,7 +480,9 @@ pub struct NearestIterMut<
 impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
     for NearestIterMut<'a, 'b, A, T, U, F>
 where
-    F: Fn(&[A], &[A]) -> A, U: PartialEq, T: PartialEq
+    F: Fn(&[A], &[A]) -> A,
+    U: PartialEq,
+    T: PartialEq,
 {
     type Item = (A, &'b mut T);
     fn next(&mut self) -> Option<(A, &'b mut T)> {
