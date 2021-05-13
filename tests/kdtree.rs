@@ -9,6 +9,8 @@ static POINT_B: ([f64; 2], usize) = ([1f64, 1f64], 1);
 static POINT_C: ([f64; 2], usize) = ([2f64, 2f64], 2);
 static POINT_D: ([f64; 2], usize) = ([3f64, 3f64], 3);
 
+static inf: f64 = f64::INFINITY;
+
 #[test]
 fn it_works() {
     let dimensions = 2;
@@ -22,31 +24,31 @@ fn it_works() {
 
     assert_eq!(kdtree.size(), 4);
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 0, inf, &squared_euclidean).unwrap(),
         vec![]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 1, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 2, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 2, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 3, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 3, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 4, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 4, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 5, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 5, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_B.0, 4, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_B.0, 4, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
     );
 
@@ -100,31 +102,31 @@ fn it_works_with_vec() {
 
     assert_eq!(kdtree.size(), 4);
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 0, inf, &squared_euclidean).unwrap(),
         vec![]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 1, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 2, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 2, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 3, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 3, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 4, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 4, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 5, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 5, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &0), (2f64, &1), (8f64, &2), (18f64, &3)]
     );
     assert_eq!(
-        kdtree.nearest(&POINT_B.0, 4, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_B.0, 4, inf, &squared_euclidean).unwrap(),
         vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
     );
 }
@@ -138,7 +140,7 @@ fn handles_zero_capacity() {
         Err(ErrorKind::ZeroCapacity)
     );
     assert_eq!(
-        kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
+        kdtree.nearest(&POINT_A.0, 1, inf, &squared_euclidean).unwrap(),
         vec![]
     );
 }
@@ -153,7 +155,7 @@ fn handles_wrong_dimension() {
         Err(ErrorKind::WrongDimension)
     );
     assert_eq!(
-        kdtree.nearest(&point.0, 1, &squared_euclidean),
+        kdtree.nearest(&point.0, 1, inf, &squared_euclidean),
         Err(ErrorKind::WrongDimension)
     );
 }
@@ -173,11 +175,11 @@ fn handles_non_finite_coordinate() {
         Err(ErrorKind::NonFiniteCoordinate)
     );
     assert_eq!(
-        kdtree.nearest(&point_a.0, 1, &squared_euclidean),
+        kdtree.nearest(&point_a.0, 1, inf, &squared_euclidean),
         Err(ErrorKind::NonFiniteCoordinate)
     );
     assert_eq!(
-        kdtree.nearest(&point_b.0, 1, &squared_euclidean),
+        kdtree.nearest(&point_b.0, 1, inf, &squared_euclidean),
         Err(ErrorKind::NonFiniteCoordinate)
     );
 }
@@ -214,22 +216,29 @@ fn handles_pending_order() {
     kdtree.add(&item3.0, item3.1).unwrap();
     kdtree.add(&item4.0, item4.1).unwrap();
     assert_eq!(
-        kdtree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
+        kdtree.nearest(&[51f64], 2, inf, &squared_euclidean).unwrap(),
         vec![(16.0, &4), (36.0, &3)]
     );
     assert_eq!(
-        kdtree.nearest(&[51f64], 4, &squared_euclidean).unwrap(),
+        kdtree.nearest(&[51f64], 4, inf, &squared_euclidean).unwrap(),
         vec![(16.0, &4), (36.0, &3), (2401.0, &2), (2601.0, &1)]
     );
     assert_eq!(
-        kdtree.nearest(&[49f64], 2, &squared_euclidean).unwrap(),
+        kdtree.nearest(&[49f64], 2, inf, &squared_euclidean).unwrap(),
         vec![(16.0, &3), (36.0, &4)]
     );
     assert_eq!(
-        kdtree.nearest(&[49f64], 4, &squared_euclidean).unwrap(),
+        kdtree.nearest(&[49f64], 4, inf, &squared_euclidean).unwrap(),
         vec![(16.0, &3), (36.0, &4), (2401.0, &1), (2601.0, &2)]
     );
 
+    assert_eq!(
+        kdtree
+            .iter_nearest(&[49f64], &squared_euclidean)
+            .unwrap()
+            .collect::<Vec<_>>(),
+        vec![(16.0, &3), (36.0, &4), (2401.0, &1), (2601.0, &2)]
+    );
     assert_eq!(
         kdtree
             .iter_nearest(&[49f64], &squared_euclidean)
