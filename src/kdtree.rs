@@ -32,16 +32,14 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
-    KdTree<A, T, U>
+impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U>
 {
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
     }
 
-    /// Create a new KD tree, specifying the dimension size of each point and the capacity of leaf
-    /// nodes, which must not be 0.
+    /// Create a new KD tree, specifying the dimension size of each point and the capacity of leaf nodes
     pub fn with_capacity(dimensions: usize, capacity: usize) -> Self {
         let min_bounds = vec![A::infinity(); dimensions];
         let max_bounds = vec![A::neg_infinity(); dimensions];
