@@ -32,7 +32,9 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
+impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
+    KdTree<A, T, U>
+{
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
@@ -135,6 +137,34 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             .into_iter()
             .map(Into::into)
             .collect())
+    }
+
+    pub fn top_n_within_unsorted<F>(
+        &self,
+        point: &[A],
+        num: usize,
+        radius: A,
+        distance: &F,
+    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        if let Err(err) = self.check_point(point) {
+            return Err(err);
+        }
+        if self.size == 0 {
+            return Ok(vec![]);
+        }
+        let mut pending = BinaryHeap::new();
+        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
+        pending.push(HeapElement {
+            distance: A::zero(),
+            element: self,
+        });
+        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
+            self.nearest_step(point, num, radius, distance, &mut pending, &mut evaluated);
+        }
+        Ok(evaluated.into_vec().into_iter().map(Into::into).collect())
     }
 
     fn nearest_step<'b, F>(
