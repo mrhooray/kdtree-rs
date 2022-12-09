@@ -362,7 +362,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     }
 
     fn belongs_in_left(&self, point: &[A]) -> bool {
-        point[self.split_dimension.unwrap()] < self.split_value.unwrap()
+        point[self.split_dimension.unwrap()] <= self.split_value.unwrap()
     }
 
     fn extend(&mut self, point: &[A]) {
