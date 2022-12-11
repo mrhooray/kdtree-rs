@@ -32,7 +32,9 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
+impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
+    KdTree<A, T, U>
+{
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
@@ -362,7 +364,11 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     }
 
     fn belongs_in_left(&self, point: &[A]) -> bool {
-        point[self.split_dimension.unwrap()] < self.split_value.unwrap()
+        if self.min_bounds[self.split_dimension.unwrap()] == self.split_value.unwrap() {
+            point[self.split_dimension.unwrap()] <= self.split_value.unwrap()
+        } else {
+            point[self.split_dimension.unwrap()] < self.split_value.unwrap()
+        }
     }
 
     fn extend(&mut self, point: &[A]) {
@@ -595,5 +601,31 @@ mod tests {
         let (pos, data) = random_point();
         let res = tree.add(pos, data);
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn avoid_infinite_call_loop_between_add_to_bucket_and_split_due_to_float_accuracy() {
+        {
+            let min = 0.47945351705599926f64;
+            let max = 0.47945351705599931f64;
+
+            let mut tree = KdTree::with_capacity(1, 2);
+            tree.add([min], ()).unwrap();
+            tree.add([max], ()).unwrap();
+
+            tree.add([min], ()).unwrap();
+            tree.add([max], ()).unwrap();
+        }
+        {
+            let min = -0.47945351705599931f64;
+            let max = -0.47945351705599926f64;
+
+            let mut tree = KdTree::with_capacity(1, 2);
+            tree.add([min], ()).unwrap();
+            tree.add([max], ()).unwrap();
+
+            tree.add([min], ()).unwrap();
+            tree.add([max], ()).unwrap();
+        }
     }
 }
