@@ -32,7 +32,9 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
+impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
+    KdTree<A, T, U>
+{
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
@@ -365,7 +367,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         if self.min_bounds[self.split_dimension.unwrap()] == self.split_value.unwrap() {
             point[self.split_dimension.unwrap()] <= self.split_value.unwrap()
         } else {
-        point[self.split_dimension.unwrap()] < self.split_value.unwrap()
+            point[self.split_dimension.unwrap()] < self.split_value.unwrap()
         }
     }
 
@@ -617,11 +619,11 @@ mod tests {
         {
             let min = -0.47945351705599931f64;
             let max = -0.47945351705599926f64;
-    
+
             let mut tree = KdTree::with_capacity(1, 2);
             tree.add([min], ()).unwrap();
             tree.add([max], ()).unwrap();
-    
+
             tree.add([min], ()).unwrap();
             tree.add([max], ()).unwrap();
         }
