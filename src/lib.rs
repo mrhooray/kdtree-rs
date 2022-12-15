@@ -53,6 +53,7 @@
 //! );
 //! ```
 extern crate num_traits;
+extern crate thiserror;
 
 #[cfg(feature = "serialize")]
 #[cfg_attr(feature = "serialize", macro_use)]

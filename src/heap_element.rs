@@ -41,8 +41,8 @@ impl<A: Float, T> PartialEq<A> for HeapElement<A, T> {
     }
 }
 
-impl<A: Float, T> Into<(A, T)> for HeapElement<A, T> {
-    fn into(self) -> (A, T) {
-        (self.distance, self.element)
+impl<A: Float, T> From<HeapElement<A, T>> for (A, T) {
+    fn from(e: HeapElement<A, T>) -> Self {
+        (e.distance, e.element)
     }
 }

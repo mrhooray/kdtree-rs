@@ -12,16 +12,13 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - 1.56.0
-          - stable
     steps:
       - uses: actions/checkout@v3
-      - name: Run Tests
+      - name: fmt
         run: cargo fmt --all --check
-  build:
+      - name: clippy
+        run: cargo clippy -- -Dwarnings
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,7 +27,5 @@ jobs:
           - stable
     steps:
       - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build
-      - name: Run Tests
+      - name: test
         run: cargo test
