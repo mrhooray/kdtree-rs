@@ -32,9 +32,7 @@ pub enum ErrorKind {
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
-    KdTree<A, T, U>
-{
+impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
@@ -63,12 +61,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         self.size
     }
 
-    pub fn nearest<F>(
-        &self,
-        point: &[A],
-        num: usize,
-        distance: &F,
-    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    pub fn nearest<F>(&self, point: &[A], num: usize, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
     {
@@ -86,17 +79,9 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             element: self,
         });
         while !pending.is_empty()
-            && (evaluated.len() < num
-                || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
+            && (evaluated.len() < num || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
         {
-            self.nearest_step(
-                point,
-                num,
-                A::infinity(),
-                distance,
-                &mut pending,
-                &mut evaluated,
-            );
+            self.nearest_step(point, num, A::infinity(), distance, &mut pending, &mut evaluated);
         }
         Ok(evaluated
             .into_sorted_vec()
@@ -123,20 +108,9 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             element: self,
         });
         while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
-            self.nearest_step(
-                point,
-                self.size,
-                radius,
-                distance,
-                &mut pending,
-                &mut evaluated,
-            );
+            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
         }
-        Ok(evaluated
-            .into_sorted_vec()
-            .into_iter()
-            .map(Into::into)
-            .collect())
+        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
     }
 
     fn nearest_step<'b, F>(
@@ -170,12 +144,8 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
                 candidate = curr.left.as_ref().unwrap();
                 curr = curr.right.as_ref().unwrap();
             }
-            let candidate_to_space = util::distance_to_space(
-                point,
-                &*candidate.min_bounds,
-                &*candidate.max_bounds,
-                distance,
-            );
+            let candidate_to_space =
+                util::distance_to_space(point, &*candidate.min_bounds, &*candidate.max_bounds, distance);
             if candidate_to_space <= evaluated_dist {
                 pending.push(HeapElement {
                     distance: candidate_to_space * -A::one(),
@@ -420,8 +390,7 @@ pub struct NearestIter<
     distance: &'a F,
 }
 
-impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
-    for NearestIter<'a, 'b, A, T, U, F>
+impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator for NearestIter<'a, 'b, A, T, U, F>
 where
     F: Fn(&[A], &[A]) -> A,
     U: PartialEq,
@@ -434,8 +403,7 @@ where
         let distance = self.distance;
         let point = self.point;
         while !self.pending.is_empty()
-            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance)
-                >= -self.pending.peek().unwrap().distance)
+            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
             let mut curr = &*self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
@@ -448,22 +416,16 @@ where
                     curr = curr.right.as_ref().unwrap();
                 }
                 self.pending.push(HeapElement {
-                    distance: -distance_to_space(
-                        point,
-                        &*candidate.min_bounds,
-                        &*candidate.max_bounds,
-                        distance,
-                    ),
+                    distance: -distance_to_space(point, &*candidate.min_bounds, &*candidate.max_bounds, distance),
                     element: &**candidate,
                 });
             }
             let points = curr.points.as_ref().unwrap().iter();
             let bucket = curr.bucket.as_ref().unwrap().iter();
-            self.evaluated
-                .extend(points.zip(bucket).map(|(p, d)| HeapElement {
-                    distance: -distance(point, p.as_ref()),
-                    element: d,
-                }));
+            self.evaluated.extend(points.zip(bucket).map(|(p, d)| HeapElement {
+                distance: -distance(point, p.as_ref()),
+                element: d,
+            }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
     }
@@ -483,8 +445,7 @@ pub struct NearestIterMut<
     distance: &'a F,
 }
 
-impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator
-    for NearestIterMut<'a, 'b, A, T, U, F>
+impl<'a, 'b, A: Float + Zero + One, T: 'b, U: 'b + AsRef<[A]>, F: 'a> Iterator for NearestIterMut<'a, 'b, A, T, U, F>
 where
     F: Fn(&[A], &[A]) -> A,
     U: PartialEq,
@@ -497,8 +458,7 @@ where
         let distance = self.distance;
         let point = self.point;
         while !self.pending.is_empty()
-            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance)
-                >= -self.pending.peek().unwrap().distance)
+            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
             let mut curr = &mut *self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
@@ -511,22 +471,16 @@ where
                     curr = curr.right.as_mut().unwrap();
                 }
                 self.pending.push(HeapElement {
-                    distance: -distance_to_space(
-                        point,
-                        &*candidate.min_bounds,
-                        &*candidate.max_bounds,
-                        distance,
-                    ),
+                    distance: -distance_to_space(point, &*candidate.min_bounds, &*candidate.max_bounds, distance),
                     element: &mut **candidate,
                 });
             }
             let points = curr.points.as_ref().unwrap().iter();
             let bucket = curr.bucket.as_mut().unwrap().iter_mut();
-            self.evaluated
-                .extend(points.zip(bucket).map(|(p, d)| HeapElement {
-                    distance: -distance(point, p.as_ref()),
-                    element: d,
-                }));
+            self.evaluated.extend(points.zip(bucket).map(|(p, d)| HeapElement {
+                distance: -distance(point, p.as_ref()),
+                element: d,
+            }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
     }

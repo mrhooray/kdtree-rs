@@ -21,10 +21,7 @@ fn it_works() {
     kdtree.add(&POINT_D.0, POINT_D.1).unwrap();
 
     assert_eq!(kdtree.size(), 4);
-    assert_eq!(
-        kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(),
-        vec![]
-    );
+    assert_eq!(kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(), vec![]);
     assert_eq!(
         kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
         vec![(0f64, &0)]
@@ -99,10 +96,7 @@ fn it_works_with_vec() {
     kdtree.add(vec![3.0; 2], 3).unwrap();
 
     assert_eq!(kdtree.size(), 4);
-    assert_eq!(
-        kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(),
-        vec![]
-    );
+    assert_eq!(kdtree.nearest(&POINT_A.0, 0, &squared_euclidean).unwrap(), vec![]);
     assert_eq!(
         kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
         vec![(0f64, &0)]
@@ -133,14 +127,8 @@ fn it_works_with_vec() {
 fn handles_zero_capacity() {
     let mut kdtree = KdTree::with_capacity(2, 0);
 
-    assert_eq!(
-        kdtree.add(&POINT_A.0, POINT_A.1),
-        Err(ErrorKind::ZeroCapacity)
-    );
-    assert_eq!(
-        kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(),
-        vec![]
-    );
+    assert_eq!(kdtree.add(&POINT_A.0, POINT_A.1), Err(ErrorKind::ZeroCapacity));
+    assert_eq!(kdtree.nearest(&POINT_A.0, 1, &squared_euclidean).unwrap(), vec![]);
 }
 
 #[test]
@@ -148,10 +136,7 @@ fn handles_wrong_dimension() {
     let point = ([0f64], 0f64);
     let mut kdtree = KdTree::with_capacity(2, 1);
 
-    assert_eq!(
-        kdtree.add(&point.0, point.1),
-        Err(ErrorKind::WrongDimension)
-    );
+    assert_eq!(kdtree.add(&point.0, point.1), Err(ErrorKind::WrongDimension));
     assert_eq!(
         kdtree.nearest(&point.0, 1, &squared_euclidean),
         Err(ErrorKind::WrongDimension)
@@ -164,14 +149,8 @@ fn handles_non_finite_coordinate() {
     let point_b = ([std::f64::INFINITY, std::f64::INFINITY], 0f64);
     let mut kdtree = KdTree::with_capacity(2, 1);
 
-    assert_eq!(
-        kdtree.add(&point_a.0, point_a.1),
-        Err(ErrorKind::NonFiniteCoordinate)
-    );
-    assert_eq!(
-        kdtree.add(&point_b.0, point_b.1),
-        Err(ErrorKind::NonFiniteCoordinate)
-    );
+    assert_eq!(kdtree.add(&point_a.0, point_a.1), Err(ErrorKind::NonFiniteCoordinate));
+    assert_eq!(kdtree.add(&point_b.0, point_b.1), Err(ErrorKind::NonFiniteCoordinate));
     assert_eq!(
         kdtree.nearest(&point_a.0, 1, &squared_euclidean),
         Err(ErrorKind::NonFiniteCoordinate)
@@ -245,10 +224,7 @@ fn handles_pending_order() {
         vec![(16.0, &4), (36.0, &3), (2401.0, &2), (2601.0, &1)]
     );
 
-    assert_eq!(
-        kdtree.within(&[50f64], 1.0, &squared_euclidean).unwrap(),
-        vec![]
-    );
+    assert_eq!(kdtree.within(&[50f64], 1.0, &squared_euclidean).unwrap(), vec![]);
     assert_eq!(
         kdtree.within(&[50f64], 25.0, &squared_euclidean).unwrap(),
         vec![(25.0, &3), (25.0, &4)]
@@ -332,14 +308,8 @@ fn handles_remove_correctly() {
     kdtree.add(&item4.0, item4.1).unwrap();
 
     let num_removed = kdtree.remove(&&item3.0, &item3.1).unwrap();
-    assert_eq!(
-        kdtree.size(),
-        3
-    );
-    assert_eq!(
-        num_removed,
-        1
-    );
+    assert_eq!(kdtree.size(), 3);
+    assert_eq!(num_removed, 1);
     assert_eq!(
         kdtree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
         vec![(16.0, &4), (2401.0, &2)]
@@ -363,19 +333,10 @@ fn handles_remove_multiple_match() {
     kdtree.add(&item3.0, item3.1).unwrap();
     kdtree.add(&item4.0, item4.1).unwrap();
 
-    assert_eq!(
-        kdtree.size(),
-        4
-    );
+    assert_eq!(kdtree.size(), 4);
     let num_removed = kdtree.remove(&&[0f64], &1).unwrap();
-    assert_eq!(
-        kdtree.size(),
-        2
-    );
-    assert_eq!(
-        num_removed,
-        2
-    );
+    assert_eq!(kdtree.size(), 2);
+    assert_eq!(num_removed, 2);
     assert_eq!(
         kdtree.nearest(&[45f64], 1, &squared_euclidean).unwrap(),
         vec![(0.0, &3)]
@@ -400,14 +361,8 @@ fn handles_remove_no_match() {
     kdtree.add(&item4.0, item4.1).unwrap();
 
     let num_removed = kdtree.remove(&&[1f64], &2).unwrap();
-    assert_eq!(
-        kdtree.size(),
-        4
-    );
-    assert_eq!(
-        num_removed,
-        0
-    );
+    assert_eq!(kdtree.size(), 4);
+    assert_eq!(num_removed, 0);
     assert_eq!(
         kdtree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
         vec![(16.0, &4), (36.0, &3)]

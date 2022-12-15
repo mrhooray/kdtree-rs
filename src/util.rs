@@ -32,12 +32,7 @@ mod tests {
 
     #[test]
     fn test_distance_outside_inf() {
-        let dis = distance_to_space(
-            &[0.0, 0.0],
-            &[1.0, 1.0],
-            &[INFINITY, INFINITY],
-            &squared_euclidean,
-        );
+        let dis = distance_to_space(&[0.0, 0.0], &[1.0, 1.0], &[INFINITY, INFINITY], &squared_euclidean);
         assert_eq!(dis, 2.0);
     }
 
