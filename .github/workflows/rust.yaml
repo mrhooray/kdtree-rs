@@ -1,0 +1,25 @@
+name: Rust
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.56.0
+          - stable
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build
+      - name: Run Tests
+        run: cargo test
