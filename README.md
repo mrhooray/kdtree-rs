@@ -1,20 +1,24 @@
-# kdtree [![Build Status](https://travis-ci.org/mrhooray/kdtree-rs.svg?branch=master)](https://travis-ci.org/mrhooray/kdtree-rs)
+# kdtree [![rust](https://github.com/mrhooray/kdtree-rs/actions/workflows/rust.yaml/badge.svg)](https://github.com/mrhooray/kdtree-rs/actions/workflows/rust.yaml) [![crates.io](https://img.shields.io/crates/v/kdtree.svg)](https://crates.io/crates/kdtree) [![docs](https://docs.rs/kdtree/badge.svg)](https://docs.rs/kdtree) [![license](https://img.shields.io/crates/l/kdtree.svg?maxAge=2592000)](https://github.com/mrhooray/kdtree-rs#license)
+
 > K-dimensional tree in Rust for fast geospatial indexing and nearest neighbors lookup
 
-* [Crate](https://crates.io/crates/kdtree)
-* [Documentation](https://docs.rs/kdtree)
-* [Usage](#usage)
-* [Benchmark](#benchmark)
-* [License](#license)
+- [Crate](https://crates.io/crates/kdtree)
+- [Documentation](https://docs.rs/kdtree)
+- [Usage](#usage)
+- [Benchmark](#benchmark)
+- [License](#license)
 
 ## Usage
+
 Add `kdtree` to `Cargo.toml`
+
 ```toml
 [dependencies]
 kdtree = "0.5.1"
 ```
 
 Add points to kdtree and query nearest n points with distance function
+
 ```rust
 use kdtree::KdTree;
 use kdtree::ErrorKind;
@@ -65,7 +69,9 @@ assert_eq!(
 ```
 
 ## Benchmark
+
 `cargo bench` with 2.3 GHz Intel i5-7360U:
+
 ```
 cargo bench
      Running target/release/deps/bench-9e622e6a4ed9b92a
@@ -76,14 +82,15 @@ test bench_nearest_from_kdtree_with_1k_3d_points ... bench:       1,237 ns/iter 
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 2 measured; 0 filtered out
 ```
+
 Thanks [Eh2406](https://github.com/Eh2406) for various fixes and perf improvements.
 
 ## License
 
 Licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT License ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT License ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
 
