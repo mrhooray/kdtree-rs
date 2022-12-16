@@ -1,6 +1,7 @@
 use std::collections::BinaryHeap;
 
 use num_traits::{Float, One, Zero};
+use thiserror::Error;
 
 use crate::heap_element::HeapElement;
 use crate::util;
@@ -25,10 +26,13 @@ pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq
     bucket: Option<Vec<T>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
+    #[error("wrong dimension")]
     WrongDimension,
+    #[error("non-finite coordinate")]
     NonFiniteCoordinate,
+    #[error("zero capacity")]
     ZeroCapacity,
 }
 
@@ -65,9 +69,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        if let Err(err) = self.check_point(point) {
-            return Err(err);
-        }
+        self.check_point(point)?;
         let num = std::cmp::min(num, self.size);
         if num == 0 {
             return Ok(vec![]);
@@ -95,9 +97,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        if let Err(err) = self.check_point(point) {
-            return Err(err);
-        }
+        self.check_point(point)?;
         if self.size == 0 {
             return Ok(vec![]);
         }
@@ -124,7 +124,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     ) where
         F: Fn(&[A], &[A]) -> A,
     {
-        let mut curr = &*pending.pop().unwrap().element;
+        let mut curr = pending.pop().unwrap().element;
         debug_assert!(evaluated.len() <= num);
         let evaluated_dist = if evaluated.len() == num {
             // We only care about the nearest `num` points, so if we already have `num` points,
@@ -145,7 +145,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
                 curr = curr.right.as_ref().unwrap();
             }
             let candidate_to_space =
-                util::distance_to_space(point, &*candidate.min_bounds, &*candidate.max_bounds, distance);
+                util::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
             if candidate_to_space <= evaluated_dist {
                 pending.push(HeapElement {
                     distance: candidate_to_space * -A::one(),
@@ -180,9 +180,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        if let Err(err) = self.check_point(point) {
-            return Err(err);
-        }
+        self.check_point(point)?;
         let mut pending = BinaryHeap::new();
         let evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
         pending.push(HeapElement {
@@ -205,9 +203,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        if let Err(err) = self.check_point(point) {
-            return Err(err);
-        }
+        self.check_point(point)?;
         let mut pending = BinaryHeap::new();
         let evaluated = BinaryHeap::<HeapElement<A, &mut T>>::new();
         pending.push(HeapElement {
@@ -226,9 +222,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         if self.capacity == 0 {
             return Err(ErrorKind::ZeroCapacity);
         }
-        if let Err(err) = self.check_point(point.as_ref()) {
-            return Err(err);
-        }
+        self.check_point(point.as_ref())?;
         self.add_unchecked(point, data)
     }
 
@@ -264,9 +258,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
 
     pub fn remove(&mut self, point: &U, data: &T) -> Result<usize, ErrorKind> {
         let mut removed = 0;
-        if let Err(err) = self.check_point(point.as_ref()) {
-            return Err(err);
-        }
+        self.check_point(point.as_ref())?;
         if let (Some(mut points), Some(mut bucket)) = (self.points.take(), self.bucket.take()) {
             while let Some(p_index) = points.iter().position(|x| x == point) {
                 if &bucket[p_index] == data {
@@ -405,7 +397,7 @@ where
         while !self.pending.is_empty()
             && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
-            let mut curr = &*self.pending.pop().unwrap().element;
+            let mut curr = self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
                 let candidate;
                 if curr.belongs_in_left(point) {
@@ -416,7 +408,7 @@ where
                     curr = curr.right.as_ref().unwrap();
                 }
                 self.pending.push(HeapElement {
-                    distance: -distance_to_space(point, &*candidate.min_bounds, &*candidate.max_bounds, distance),
+                    distance: -distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance),
                     element: &**candidate,
                 });
             }
@@ -471,7 +463,7 @@ where
                     curr = curr.right.as_mut().unwrap();
                 }
                 self.pending.push(HeapElement {
-                    distance: -distance_to_space(point, &*candidate.min_bounds, &*candidate.max_bounds, distance),
+                    distance: -distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance),
                     element: &mut **candidate,
                 });
             }
@@ -483,23 +475,6 @@ where
             }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
-    }
-}
-
-impl std::error::Error for ErrorKind {
-    fn description(&self) -> &str {
-        match *self {
-            ErrorKind::WrongDimension => "wrong dimension",
-            ErrorKind::NonFiniteCoordinate => "non-finite coordinate",
-            ErrorKind::ZeroCapacity => "zero capacity",
-        }
-    }
-}
-
-impl std::fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use std::error::Error;
-        write!(f, "KdTree error: {}", self.description())
     }
 }
 
@@ -561,7 +536,7 @@ mod tests {
     fn avoid_infinite_call_loop_between_add_to_bucket_and_split_due_to_float_accuracy() {
         {
             let min = 0.47945351705599926f64;
-            let max = 0.47945351705599931f64;
+            let max = 0.479_453_517_055_999_3_f64;
 
             let mut tree = KdTree::with_capacity(1, 2);
             tree.add([min], ()).unwrap();
@@ -571,7 +546,7 @@ mod tests {
             tree.add([max], ()).unwrap();
         }
         {
-            let min = -0.47945351705599931f64;
+            let min = -0.479_453_517_055_999_3_f64;
             let max = -0.47945351705599926f64;
 
             let mut tree = KdTree::with_capacity(1, 2);
