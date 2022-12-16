@@ -1,10 +1,10 @@
-name: Rust
+name: rust
 
 on:
   push:
-    branches: ["master"]
+    branches: [ master ]
   pull_request:
-    branches: ["master"]
+    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,10 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
       - name: fmt
-        run: cargo fmt --all --check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
       - name: clippy
-        run: cargo clippy -- -Dwarnings
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -Dwarnings
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -27,5 +39,12 @@ jobs:
           - stable
     steps:
       - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: test
-        run: cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
