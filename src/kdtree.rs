@@ -113,6 +113,46 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
     }
 
+    pub fn within_unsorted<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        if self.size == 0 {
+            return Ok(vec![]);
+        }
+        let mut pending = BinaryHeap::new();
+        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
+        pending.push(HeapElement {
+            distance: A::zero(),
+            element: self,
+        });
+        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
+            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
+        }
+        Ok(evaluated.into_iter().map(Into::into).collect())
+    }
+
+    pub fn within_count<F>(&self, point: &[A], radius: A, distance: &F) -> Result<usize, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        if self.size == 0 {
+            return Ok(0);
+        }
+        let mut pending = BinaryHeap::new();
+        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
+        pending.push(HeapElement {
+            distance: A::zero(),
+            element: self,
+        });
+        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
+            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
+        }
+        Ok(evaluated.len())
+    }
+
     fn nearest_step<'b, F>(
         &self,
         point: &[A],

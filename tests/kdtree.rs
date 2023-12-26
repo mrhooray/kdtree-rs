@@ -60,6 +60,48 @@ fn it_works() {
         vec![(0.0, &1), (2.0, &2), (2.0, &0)]
     );
 
+    let unsorted1 = kdtree.within_unsorted(&POINT_A.0, 0.0, &squared_euclidean).unwrap();
+    let ans1 = vec![(0.0, &0)];
+    assert_eq!(
+        unsorted1.len(),
+        ans1.len()
+    );
+    assert_eq!(
+        kdtree.within_count(&POINT_A.0, 0.0, &squared_euclidean).unwrap(),
+        ans1.len()
+    );
+    for item in unsorted1 {
+        assert!(ans1.contains(&item));
+    }
+
+    let unsorted2 = kdtree.within_unsorted(&POINT_B.0, 1.0, &squared_euclidean).unwrap();
+    let ans2 = vec![(0.0, &1)];
+    assert_eq!(
+        unsorted2.len(),
+        ans2.len()
+    );
+    assert_eq!(
+        kdtree.within_count(&POINT_B.0, 1.0, &squared_euclidean).unwrap(),
+        ans2.len()
+    );
+    for item in unsorted2 {
+        assert!(ans2.contains(&item));
+    }
+
+    let unsorted3 = kdtree.within_unsorted(&POINT_B.0, 2.0, &squared_euclidean).unwrap();
+    let ans3 = vec![(0.0, &1), (2.0, &2), (2.0, &0)];
+    assert_eq!(
+        unsorted3.len(),
+        ans3.len()
+    );
+    assert_eq!(
+        kdtree.within_count(&POINT_B.0, 2.0, &squared_euclidean).unwrap(),
+        ans3.len()
+    );
+    for item in unsorted3 {
+        assert!(ans3.contains(&item));
+    }
+
     assert_eq!(
         kdtree
             .iter_nearest(&POINT_A.0, &squared_euclidean)
