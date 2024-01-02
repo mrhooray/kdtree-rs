@@ -62,10 +62,7 @@ fn it_works() {
 
     let unsorted1 = kdtree.within_unsorted(&POINT_A.0, 0.0, &squared_euclidean).unwrap();
     let ans1 = vec![(0.0, &0)];
-    assert_eq!(
-        unsorted1.len(),
-        ans1.len()
-    );
+    assert_eq!(unsorted1.len(), ans1.len());
     assert_eq!(
         kdtree.within_count(&POINT_A.0, 0.0, &squared_euclidean).unwrap(),
         ans1.len()
@@ -76,10 +73,7 @@ fn it_works() {
 
     let unsorted2 = kdtree.within_unsorted(&POINT_B.0, 1.0, &squared_euclidean).unwrap();
     let ans2 = vec![(0.0, &1)];
-    assert_eq!(
-        unsorted2.len(),
-        ans2.len()
-    );
+    assert_eq!(unsorted2.len(), ans2.len());
     assert_eq!(
         kdtree.within_count(&POINT_B.0, 1.0, &squared_euclidean).unwrap(),
         ans2.len()
@@ -90,10 +84,7 @@ fn it_works() {
 
     let unsorted3 = kdtree.within_unsorted(&POINT_B.0, 2.0, &squared_euclidean).unwrap();
     let ans3 = vec![(0.0, &1), (2.0, &2), (2.0, &0)];
-    assert_eq!(
-        unsorted3.len(),
-        ans3.len()
-    );
+    assert_eq!(unsorted3.len(), ans3.len());
     assert_eq!(
         kdtree.within_count(&POINT_B.0, 2.0, &squared_euclidean).unwrap(),
         ans3.len()
