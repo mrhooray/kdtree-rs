@@ -8,13 +8,13 @@ pub struct HeapElement<A, T> {
 
 impl<A: Float, T> Ord for HeapElement<A, T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+        self.distance.partial_cmp(&other.distance).unwrap_or(Ordering::Equal)
     }
 }
 
 impl<A: Float, T> PartialOrd for HeapElement<A, T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.distance.partial_cmp(&other.distance)
+        Some(self.cmp(other))
     }
 }
 
