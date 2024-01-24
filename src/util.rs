@@ -18,10 +18,21 @@ where
     distance(p1, &p2[..])
 }
 
+pub fn within_bounding_box<T>(p: &[T], min_bounds: &[T], max_bounds: &[T]) -> bool
+where T: Float,
+{
+    for ((l, h), v) in min_bounds.iter().zip(max_bounds.iter()).zip(p) {
+        if v < l || v > h {
+            return false;
+        }
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::distance_to_space;
-    use crate::distance::squared_euclidean;
+    use crate::{distance::squared_euclidean, util::within_bounding_box};
     use std::f64::{INFINITY, NEG_INFINITY};
 
     #[test]
@@ -62,5 +73,14 @@ mod tests {
             &squared_euclidean,
         );
         assert_eq!(dis, 4.0);
+    }
+
+    #[test]
+    fn test_within_bounding_box() {
+        assert!(within_bounding_box(&[1.0, 1.0], &[0.0, 0.0], &[2.0, 2.0]));
+        assert!(within_bounding_box(&[1.0, 1.0], &[1.0, 1.0], &[2.0, 2.0]));
+        assert!(within_bounding_box(&[1.0, 1.0], &[0.0, 0.0], &[1.0, 1.0]));
+        assert!(!within_bounding_box(&[2.0, 2.0], &[0.0, 0.0], &[1.0, 1.0]));
+        assert!(!within_bounding_box(&[0.0, 0.0], &[1.0, 1.0], &[2.0, 2.0]));
     }
 }
