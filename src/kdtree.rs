@@ -93,14 +93,11 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             .collect())
     }
 
-    pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    #[inline(always)]
+    fn evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> BinaryHeap<HeapElement<A, &T>>
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
         let mut pending = BinaryHeap::new();
         let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
         pending.push(HeapElement {
@@ -110,6 +107,18 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
             self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
         }
+        evaluated
+    }
+
+    pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        if self.size == 0 {
+            return Ok(vec![]);
+        }
+        let evaluated = self.evaluated_heap(point, radius, distance);
         Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
     }
 
@@ -121,15 +130,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         if self.size == 0 {
             return Ok(vec![]);
         }
-        let mut pending = BinaryHeap::new();
-        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
-        pending.push(HeapElement {
-            distance: A::zero(),
-            element: self,
-        });
-        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
-            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
-        }
+        let evaluated = self.evaluated_heap(point, radius, distance);
         Ok(evaluated.into_iter().map(Into::into).collect())
     }
 
@@ -141,15 +142,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         if self.size == 0 {
             return Ok(0);
         }
-        let mut pending = BinaryHeap::new();
-        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
-        pending.push(HeapElement {
-            distance: A::zero(),
-            element: self,
-        });
-        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
-            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
-        }
+        let evaluated = self.evaluated_heap(point, radius, distance);
         Ok(evaluated.len())
     }
 
