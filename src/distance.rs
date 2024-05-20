@@ -34,5 +34,5 @@ pub fn squared_euclidean<T: Float>(a: &[T], b: &[T]) -> T {
     a.iter()
         .zip(b.iter())
         .map(|(x, y)| ((*x) - (*y)) * ((*x) - (*y)))
-        .fold(T::zero(), ::std::ops::Add::add)
+        .fold(T::zero(), core::ops::Add::add)
 }

@@ -22,7 +22,7 @@ where
 mod tests {
     use super::distance_to_space;
     use crate::distance::squared_euclidean;
-    use std::f64::{INFINITY, NEG_INFINITY};
+    use core::f64::{INFINITY, NEG_INFINITY};
 
     #[test]
     fn test_normal_distance_to_space() {
