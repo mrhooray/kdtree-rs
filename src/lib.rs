@@ -52,7 +52,15 @@
 //!     vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
 //! );
 //! ```
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[macro_use]
+extern crate alloc;
+
 extern crate num_traits;
+
+#[cfg(feature = "std")]
 extern crate thiserror;
 
 #[cfg(feature = "serialize")]

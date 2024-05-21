@@ -1,6 +1,10 @@
-use std::collections::BinaryHeap;
+use alloc::collections::BinaryHeap;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use num_traits::{Float, One, Zero};
+
+#[cfg(feature = "std")]
 use thiserror::Error;
 
 use crate::heap_element::HeapElement;
@@ -8,7 +12,7 @@ use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
-pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> {
+pub struct KdTree<A, T: core::cmp::PartialEq, U: AsRef<[A]> + core::cmp::PartialEq> {
     // node
     left: Option<Box<KdTree<A, T, U>>>,
     right: Option<Box<KdTree<A, T, U>>>,
@@ -26,17 +30,17 @@ pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq
     bucket: Option<Vec<T>>,
 }
 
-#[derive(Error, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ErrorKind {
-    #[error("wrong dimension")]
+    #[cfg_attr(feature = "std", error("wrong dimension"))]
     WrongDimension,
-    #[error("non-finite coordinate")]
+    #[cfg_attr(feature = "std", error("non-finite coordinate"))]
     NonFiniteCoordinate,
-    #[error("zero capacity")]
+    #[cfg_attr(feature = "std", error("zero capacity"))]
     ZeroCapacity,
 }
 
-impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> KdTree<A, T, U> {
+impl<A: Float + Zero + One, T: core::cmp::PartialEq, U: AsRef<[A]> + core::cmp::PartialEq> KdTree<A, T, U> {
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
@@ -70,7 +74,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         F: Fn(&[A], &[A]) -> A,
     {
         self.check_point(point)?;
-        let num = std::cmp::min(num, self.size);
+        let num = core::cmp::min(num, self.size);
         if num == 0 {
             return Ok(vec![]);
         }
@@ -406,7 +410,7 @@ pub struct NearestIter<
     'b,
     A: 'a + 'b + Float,
     T: 'b + PartialEq,
-    U: 'b + AsRef<[A]> + std::cmp::PartialEq,
+    U: 'b + AsRef<[A]> + core::cmp::PartialEq,
     F: 'a + Fn(&[A], &[A]) -> A,
 > {
     point: &'a [A],
