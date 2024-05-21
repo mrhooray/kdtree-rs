@@ -3,7 +3,9 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use num_traits::{Float, One, Zero};
-// use thiserror::Error;
+
+#[cfg(feature = "std")]
+use thiserror::Error;
 
 use crate::heap_element::HeapElement;
 use crate::util;
@@ -30,11 +32,11 @@ pub struct KdTree<A, T: core::cmp::PartialEq, U: AsRef<[A]> + core::cmp::Partial
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ErrorKind {
-    // #[error("wrong dimension")]
+    #[cfg_attr(feature = "std", error("wrong dimension"))]
     WrongDimension,
-    // #[error("non-finite coordinate")]
+    #[cfg_attr(feature = "std", error("non-finite coordinate"))]
     NonFiniteCoordinate,
-    // #[error("zero capacity")]
+    #[cfg_attr(feature = "std", error("zero capacity"))]
     ZeroCapacity,
 }
 

@@ -15,6 +15,7 @@ rand = "0.8.5"
 [dependencies.num-traits]
 version = "0.2"
 default-features = false
+features = ["libm"]
 
 [dependencies.serde]
 version = "1.0"
@@ -26,3 +27,4 @@ optional = true
 
 [features]
 serialize = ["serde", "serde_derive"]
+std = []
