@@ -401,3 +401,21 @@ fn handles_remove_no_match() {
         vec![(16.0, &4), (36.0, &3)]
     );
 }
+
+#[test]
+fn handles_remove_overlapping_points() {
+    let a = ([0f64, 0f64], 0);
+    let b = ([0f64, 0f64], 1);
+    let mut kdtree = KdTree::new(2);
+
+    kdtree.add(a.0, a.1).unwrap();
+    kdtree.add(b.0, b.1).unwrap();
+
+    let num_removed = kdtree.remove(&[0f64, 0f64], &1).unwrap();
+    assert_eq!(kdtree.size(), 1);
+    assert_eq!(num_removed, 1);
+    assert_eq!(
+        kdtree.nearest(&[0f64, 0f64], 1, &squared_euclidean).unwrap(),
+        vec![(0.0, &0)]
+    );
+}
