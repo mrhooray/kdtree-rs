@@ -25,7 +25,6 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.56.0
           - stable
     steps:
       - uses: actions/checkout@v3
