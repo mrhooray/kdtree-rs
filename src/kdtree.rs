@@ -139,13 +139,15 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         let mut removed = 0;
         self.check_point(point.as_ref())?;
         if let (Some(mut points), Some(mut bucket)) = (self.points.take(), self.bucket.take()) {
-            while let Some(p_index) = points.iter().position(|x| x == point) {
-                if &bucket[p_index] == data {
-                    points.remove(p_index);
-                    bucket.remove(p_index);
-                    removed += 1;
-                    self.size -= 1;
-                }
+            while let Some(p_index) = points
+                .iter()
+                .zip(bucket.iter())
+                .position(|(p, d)| p == point && d == data)
+            {
+                points.remove(p_index);
+                bucket.remove(p_index);
+                removed += 1;
+                self.size -= 1;
             }
             self.points = Some(points);
             self.bucket = Some(bucket);
