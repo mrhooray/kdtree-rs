@@ -350,8 +350,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         let mut pending = vec![];
         let mut evaluated = vec![];
         pending.push(self);
-        while !pending.is_empty() {
-            let curr = pending.pop().unwrap();
+        while let Some(curr) = pending.pop() {
             if curr.is_leaf() {
                 let points = curr.points.as_ref().unwrap().iter();
                 let bucket = curr.bucket.as_ref().unwrap().iter();
