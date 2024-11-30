@@ -61,7 +61,7 @@ fn it_works() {
     );
 
     let unsorted1 = kdtree.within_unsorted(&POINT_A.0, 0.0, &squared_euclidean).unwrap();
-    let ans1 = vec![(0.0, &0)];
+    let ans1 = [(0.0, &0)];
     assert_eq!(unsorted1.len(), ans1.len());
     assert_eq!(
         kdtree.within_count(&POINT_A.0, 0.0, &squared_euclidean).unwrap(),
@@ -72,7 +72,7 @@ fn it_works() {
     }
 
     let unsorted2 = kdtree.within_unsorted(&POINT_B.0, 1.0, &squared_euclidean).unwrap();
-    let ans2 = vec![(0.0, &1)];
+    let ans2 = [(0.0, &1)];
     assert_eq!(unsorted2.len(), ans2.len());
     assert_eq!(
         kdtree.within_count(&POINT_B.0, 1.0, &squared_euclidean).unwrap(),
@@ -83,7 +83,7 @@ fn it_works() {
     }
 
     let unsorted3 = kdtree.within_unsorted(&POINT_B.0, 2.0, &squared_euclidean).unwrap();
-    let ans3 = vec![(0.0, &1), (2.0, &2), (2.0, &0)];
+    let ans3 = [(0.0, &1), (2.0, &2), (2.0, &0)];
     assert_eq!(unsorted3.len(), ans3.len());
     assert_eq!(
         kdtree.within_count(&POINT_B.0, 2.0, &squared_euclidean).unwrap(),
@@ -178,8 +178,8 @@ fn handles_wrong_dimension() {
 
 #[test]
 fn handles_non_finite_coordinate() {
-    let point_a = ([std::f64::NAN, std::f64::NAN], 0f64);
-    let point_b = ([std::f64::INFINITY, std::f64::INFINITY], 0f64);
+    let point_a = ([f64::NAN, f64::NAN], 0f64);
+    let point_b = ([f64::INFINITY, f64::INFINITY], 0f64);
     let mut kdtree = KdTree::with_capacity(2, 1);
 
     assert_eq!(kdtree.add(&point_a.0, point_a.1), Err(ErrorKind::NonFiniteCoordinate));
