@@ -61,6 +61,113 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         }
     }
 
+    pub fn add(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
+        if self.capacity == 0 {
+            return Err(ErrorKind::ZeroCapacity);
+        }
+        self.check_point(point.as_ref())?;
+        self.add_unchecked(point, data)
+    }
+
+    fn add_unchecked(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
+        if self.is_leaf() {
+            self.add_to_bucket(point, data);
+            return Ok(());
+        }
+        self.extend(point.as_ref());
+        self.size += 1;
+        let next = if self.belongs_in_left(point.as_ref()) {
+            self.left.as_mut()
+        } else {
+            self.right.as_mut()
+        };
+        next.unwrap().add_unchecked(point, data)
+    }
+
+    fn add_to_bucket(&mut self, point: U, data: T) {
+        self.extend(point.as_ref());
+        let mut points = self.points.take().unwrap();
+        let mut bucket = self.bucket.take().unwrap();
+        points.push(point);
+        bucket.push(data);
+        self.size += 1;
+        if self.size > self.capacity {
+            self.split(points, bucket);
+        } else {
+            self.points = Some(points);
+            self.bucket = Some(bucket);
+        }
+    }
+
+    fn split(&mut self, mut points: Vec<U>, mut bucket: Vec<T>) {
+        let mut max = A::zero();
+        for dim in 0..self.dimensions {
+            let diff = self.max_bounds[dim] - self.min_bounds[dim];
+            if !diff.is_nan() && diff > max {
+                max = diff;
+                self.split_dimension = Some(dim);
+            }
+        }
+        match self.split_dimension {
+            None => {
+                self.points = Some(points);
+                self.bucket = Some(bucket);
+                return;
+            }
+            Some(dim) => {
+                let min = self.min_bounds[dim];
+                let max = self.max_bounds[dim];
+                self.split_value = Some(min + (max - min) / A::from(2.0).unwrap());
+            }
+        };
+        let mut left = Box::new(KdTree::with_capacity(self.dimensions, self.capacity));
+        let mut right = Box::new(KdTree::with_capacity(self.dimensions, self.capacity));
+        while !points.is_empty() {
+            let point = points.swap_remove(0);
+            let data = bucket.swap_remove(0);
+            if self.belongs_in_left(point.as_ref()) {
+                left.add_to_bucket(point, data);
+            } else {
+                right.add_to_bucket(point, data);
+            }
+        }
+        self.left = Some(left);
+        self.right = Some(right);
+    }
+
+    pub fn remove(&mut self, point: &U, data: &T) -> Result<usize, ErrorKind> {
+        let mut removed = 0;
+        self.check_point(point.as_ref())?;
+        if let (Some(mut points), Some(mut bucket)) = (self.points.take(), self.bucket.take()) {
+            while let Some(p_index) = points.iter().position(|x| x == point) {
+                if &bucket[p_index] == data {
+                    points.remove(p_index);
+                    bucket.remove(p_index);
+                    removed += 1;
+                    self.size -= 1;
+                }
+            }
+            self.points = Some(points);
+            self.bucket = Some(bucket);
+        } else {
+            if let Some(right) = self.right.as_mut() {
+                let right_removed = right.remove(point, data)?;
+                if right_removed > 0 {
+                    self.size -= right_removed;
+                    removed += right_removed;
+                }
+            }
+            if let Some(left) = self.left.as_mut() {
+                let left_removed = left.remove(point, data)?;
+                if left_removed > 0 {
+                    self.size -= left_removed;
+                    removed += left_removed;
+                }
+            }
+        }
+        Ok(removed)
+    }
+
     pub fn size(&self) -> usize {
         self.size
     }
@@ -91,59 +198,6 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             .take(num)
             .map(Into::into)
             .collect())
-    }
-
-    #[inline(always)]
-    fn evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> BinaryHeap<HeapElement<A, &T>>
-    where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        let mut pending = BinaryHeap::new();
-        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
-        pending.push(HeapElement {
-            distance: A::zero(),
-            element: self,
-        });
-        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
-            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
-        }
-        evaluated
-    }
-
-    pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
-    where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
-        let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
-    }
-
-    pub fn within_unsorted<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
-    where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
-        let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.into_iter().map(Into::into).collect())
-    }
-
-    pub fn within_count<F>(&self, point: &[A], radius: A, distance: &F) -> Result<usize, ErrorKind>
-    where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(0);
-        }
-        let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.len())
     }
 
     fn nearest_step<'b, F>(
@@ -251,111 +305,57 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         })
     }
 
-    pub fn add(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
-        if self.capacity == 0 {
-            return Err(ErrorKind::ZeroCapacity);
+    pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        if self.size == 0 {
+            return Ok(vec![]);
         }
-        self.check_point(point.as_ref())?;
-        self.add_unchecked(point, data)
+        let evaluated = self.evaluated_heap(point, radius, distance);
+        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
     }
 
-    fn add_unchecked(&mut self, point: U, data: T) -> Result<(), ErrorKind> {
-        if self.is_leaf() {
-            self.add_to_bucket(point, data);
-            return Ok(());
+    pub fn within_unsorted<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        if self.size == 0 {
+            return Ok(vec![]);
         }
-        self.extend(point.as_ref());
-        self.size += 1;
-        let next = if self.belongs_in_left(point.as_ref()) {
-            self.left.as_mut()
-        } else {
-            self.right.as_mut()
-        };
-        next.unwrap().add_unchecked(point, data)
+        let evaluated = self.evaluated_heap(point, radius, distance);
+        Ok(evaluated.into_iter().map(Into::into).collect())
     }
 
-    fn add_to_bucket(&mut self, point: U, data: T) {
-        self.extend(point.as_ref());
-        let mut points = self.points.take().unwrap();
-        let mut bucket = self.bucket.take().unwrap();
-        points.push(point);
-        bucket.push(data);
-        self.size += 1;
-        if self.size > self.capacity {
-            self.split(points, bucket);
-        } else {
-            self.points = Some(points);
-            self.bucket = Some(bucket);
+    pub fn within_count<F>(&self, point: &[A], radius: A, distance: &F) -> Result<usize, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        if self.size == 0 {
+            return Ok(0);
         }
+        let evaluated = self.evaluated_heap(point, radius, distance);
+        Ok(evaluated.len())
     }
 
-    pub fn remove(&mut self, point: &U, data: &T) -> Result<usize, ErrorKind> {
-        let mut removed = 0;
-        self.check_point(point.as_ref())?;
-        if let (Some(mut points), Some(mut bucket)) = (self.points.take(), self.bucket.take()) {
-            while let Some(p_index) = points.iter().position(|x| x == point) {
-                if &bucket[p_index] == data {
-                    points.remove(p_index);
-                    bucket.remove(p_index);
-                    removed += 1;
-                    self.size -= 1;
-                }
-            }
-            self.points = Some(points);
-            self.bucket = Some(bucket);
-        } else {
-            if let Some(right) = self.right.as_mut() {
-                let right_removed = right.remove(point, data)?;
-                if right_removed > 0 {
-                    self.size -= right_removed;
-                    removed += right_removed;
-                }
-            }
-            if let Some(left) = self.left.as_mut() {
-                let left_removed = left.remove(point, data)?;
-                if left_removed > 0 {
-                    self.size -= left_removed;
-                    removed += left_removed;
-                }
-            }
+    #[inline(always)]
+    fn evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> BinaryHeap<HeapElement<A, &T>>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        let mut pending = BinaryHeap::new();
+        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
+        pending.push(HeapElement {
+            distance: A::zero(),
+            element: self,
+        });
+        while !pending.is_empty() && (-pending.peek().unwrap().distance <= radius) {
+            self.nearest_step(point, self.size, radius, distance, &mut pending, &mut evaluated);
         }
-        Ok(removed)
-    }
-
-    fn split(&mut self, mut points: Vec<U>, mut bucket: Vec<T>) {
-        let mut max = A::zero();
-        for dim in 0..self.dimensions {
-            let diff = self.max_bounds[dim] - self.min_bounds[dim];
-            if !diff.is_nan() && diff > max {
-                max = diff;
-                self.split_dimension = Some(dim);
-            }
-        }
-        match self.split_dimension {
-            None => {
-                self.points = Some(points);
-                self.bucket = Some(bucket);
-                return;
-            }
-            Some(dim) => {
-                let min = self.min_bounds[dim];
-                let max = self.max_bounds[dim];
-                self.split_value = Some(min + (max - min) / A::from(2.0).unwrap());
-            }
-        };
-        let mut left = Box::new(KdTree::with_capacity(self.dimensions, self.capacity));
-        let mut right = Box::new(KdTree::with_capacity(self.dimensions, self.capacity));
-        while !points.is_empty() {
-            let point = points.swap_remove(0);
-            let data = bucket.swap_remove(0);
-            if self.belongs_in_left(point.as_ref()) {
-                left.add_to_bucket(point, data);
-            } else {
-                right.add_to_bucket(point, data);
-            }
-        }
-        self.left = Some(left);
-        self.right = Some(right);
+        evaluated
     }
 
     fn belongs_in_left(&self, point: &[A]) -> bool {
