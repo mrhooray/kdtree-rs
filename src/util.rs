@@ -22,7 +22,6 @@ where
 mod tests {
     use super::distance_to_space;
     use crate::distance::squared_euclidean;
-    use std::f64::{INFINITY, NEG_INFINITY};
 
     #[test]
     fn test_normal_distance_to_space() {
@@ -32,7 +31,12 @@ mod tests {
 
     #[test]
     fn test_distance_outside_inf() {
-        let dis = distance_to_space(&[0.0, 0.0], &[1.0, 1.0], &[INFINITY, INFINITY], &squared_euclidean);
+        let dis = distance_to_space(
+            &[0.0, 0.0],
+            &[1.0, 1.0],
+            &[f64::INFINITY, f64::INFINITY],
+            &squared_euclidean,
+        );
         assert_eq!(dis, 2.0);
     }
 
@@ -40,8 +44,8 @@ mod tests {
     fn test_distance_inside_inf() {
         let dis = distance_to_space(
             &[2.0, 2.0],
-            &[NEG_INFINITY, NEG_INFINITY],
-            &[INFINITY, INFINITY],
+            &[f64::NEG_INFINITY, f64::NEG_INFINITY],
+            &[f64::INFINITY, f64::INFINITY],
             &squared_euclidean,
         );
         assert_eq!(dis, 0.0);
@@ -57,8 +61,8 @@ mod tests {
     fn distance_to_half_space() {
         let dis = distance_to_space(
             &[-2.0, 0.0],
-            &[0.0, NEG_INFINITY],
-            &[INFINITY, INFINITY],
+            &[0.0, f64::NEG_INFINITY],
+            &[f64::INFINITY, f64::INFINITY],
             &squared_euclidean,
         );
         assert_eq!(dis, 4.0);
