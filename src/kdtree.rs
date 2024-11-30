@@ -341,6 +341,37 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         Ok(evaluated.len())
     }
 
+    pub fn within_bounding_box(&self, min_bounds: &[A], max_bounds: &[A]) -> Result<Vec<&T>, ErrorKind> {
+        self.check_point(min_bounds)?;
+        self.check_point(max_bounds)?;
+        if self.size == 0 {
+            return Ok(vec![]);
+        }
+        let mut pending = vec![];
+        let mut evaluated = vec![];
+        pending.push(self);
+        while let Some(curr) = pending.pop() {
+            if curr.is_leaf() {
+                let points = curr.points.as_ref().unwrap().iter();
+                let bucket = curr.bucket.as_ref().unwrap().iter();
+                for (p, b) in points.zip(bucket) {
+                    if util::within_bounding_box(p.as_ref(), min_bounds, max_bounds) {
+                        evaluated.push(b);
+                    }
+                }
+            } else {
+                if curr.belongs_in_left(min_bounds) {
+                    pending.push(curr.left.as_ref().unwrap());
+                }
+                if !curr.belongs_in_left(max_bounds) {
+                    pending.push(curr.right.as_ref().unwrap());
+                }
+            }
+        }
+
+        Ok(evaluated)
+    }
+
     #[inline(always)]
     fn evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> BinaryHeap<HeapElement<A, &T>>
     where
@@ -589,5 +620,34 @@ mod tests {
             tree.add([min], ()).unwrap();
             tree.add([max], ()).unwrap();
         }
+    }
+
+    #[test]
+    fn test_within_bounding_box() {
+        let mut tree = KdTree::with_capacity(2, 2);
+        for i in 0..10 {
+            for j in 0..10 {
+                let id = i.to_string() + &j.to_string();
+                tree.add([i as f64, j as f64], id).unwrap();
+            }
+        }
+
+        let within: Vec<String> = tree
+            .within_bounding_box(&[4.0, 4.0], &[6.0, 6.0])
+            .unwrap()
+            .iter()
+            .cloned()
+            .cloned()
+            .collect();
+        assert_eq!(within.len(), 9);
+        assert!(within.contains(&String::from("44")));
+        assert!(within.contains(&String::from("45")));
+        assert!(within.contains(&String::from("46")));
+        assert!(within.contains(&String::from("54")));
+        assert!(within.contains(&String::from("55")));
+        assert!(within.contains(&String::from("56")));
+        assert!(within.contains(&String::from("64")));
+        assert!(within.contains(&String::from("65")));
+        assert!(within.contains(&String::from("66")));
     }
 }
