@@ -44,8 +44,8 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
 
     /// Create a new KD tree, specifying the dimension size of each point and the capacity of leaf nodes
     pub fn with_capacity(dimensions: usize, capacity: usize) -> Self {
-        let min_bounds = vec![A::infinity(); dimensions];
-        let max_bounds = vec![A::neg_infinity(); dimensions];
+        let min_bounds = vec![A::max_value(); dimensions];
+        let max_bounds = vec![A::min_value(); dimensions];
         KdTree {
             left: None,
             right: None,
@@ -192,7 +192,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
         while !pending.is_empty()
             && (evaluated.len() < num || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
         {
-            self.nearest_step(point, num, A::infinity(), distance, &mut pending, &mut evaluated);
+            self.nearest_step(point, num, A::max_value(), distance, &mut pending, &mut evaluated);
         }
         Ok(evaluated
             .into_sorted_vec()
@@ -461,7 +461,7 @@ where
         let distance = self.distance;
         let point = self.point;
         while !self.pending.is_empty()
-            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
+            && (self.evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
             let mut curr = self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
@@ -516,7 +516,7 @@ where
         let distance = self.distance;
         let point = self.point;
         while !self.pending.is_empty()
-            && (self.evaluated.peek().map_or(A::infinity(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
+            && (self.evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
             let mut curr = &mut *self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
