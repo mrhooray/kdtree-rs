@@ -1,7 +1,7 @@
 extern crate kdtree;
 
-use kdtree::distance::squared_euclidean;
 use kdtree::KdTree;
+use kdtree::distance::squared_euclidean;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static POINT_A: ([f64; 2], usize) = ([0f64, 0f64], 0);

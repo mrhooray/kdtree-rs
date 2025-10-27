@@ -2,9 +2,9 @@ extern crate criterion;
 extern crate kdtree;
 extern crate rand;
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use kdtree::distance::squared_euclidean;
+use criterion::{Criterion, criterion_group, criterion_main};
 use kdtree::KdTree;
+use kdtree::distance::squared_euclidean;
 
 fn rand_data() -> ([f64; 3], f64) {
     rand::random()
