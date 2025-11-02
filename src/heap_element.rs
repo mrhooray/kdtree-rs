@@ -18,26 +18,11 @@ impl<A: Float, T> PartialOrd for HeapElement<A, T> {
     }
 }
 
-impl<A: Float, T> PartialOrd<A> for HeapElement<A, T>
-where
-    HeapElement<A, T>: PartialEq<A>,
-{
-    fn partial_cmp(&self, other: &A) -> Option<Ordering> {
-        self.distance.partial_cmp(other)
-    }
-}
-
 impl<A: Float, T> Eq for HeapElement<A, T> {}
 
 impl<A: Float, T> PartialEq for HeapElement<A, T> {
     fn eq(&self, other: &Self) -> bool {
         self.distance == other.distance
-    }
-}
-
-impl<A: Float, T> PartialEq<A> for HeapElement<A, T> {
-    fn eq(&self, other: &A) -> bool {
-        self.distance == *other
     }
 }
 
