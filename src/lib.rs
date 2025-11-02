@@ -52,8 +52,6 @@
 //!     vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
 //! );
 //! ```
-extern crate num_traits;
-extern crate thiserror;
 
 #[cfg(feature = "serialize")]
 #[cfg_attr(feature = "serialize", macro_use)]
