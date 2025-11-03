@@ -39,12 +39,12 @@ jobs:
         with:
           toolchain: stable
       - run: cargo install critcmp
-       - run: cargo bench --all-features
-       - uses: actions/upload-artifact@v4
-         with:
-           name: bench-results-${{ github.sha }}
-           path: target/criterion/
-       - if: github.event_name == 'pull_request'
+      - run: cargo bench --all-features
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-results-${{ github.sha }}
+          path: target/criterion/
+      - if: github.event_name == 'pull_request'
          run: |
            git fetch origin __bench_baseline__:baseline-branch
            if [ -f "baseline.json" ]; then
@@ -57,8 +57,8 @@ jobs:
              )
            else
              echo "No baseline found, skipping comparison"
-           fi
-       - if: github.ref == 'refs/heads/master'
+            fi
+      - if: github.ref == 'refs/heads/master'
          run: |
            git checkout __bench_baseline__ 2>/dev/null || git checkout -b __bench_baseline__
            critcmp --export base > baseline.json
