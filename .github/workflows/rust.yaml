@@ -45,24 +45,24 @@ jobs:
           name: bench-results-${{ github.sha }}
           path: target/criterion/
       - if: github.event_name == 'pull_request'
-         run: |
-           git fetch origin __bench_baseline__:baseline-branch
-           if [ -f "baseline.json" ]; then
-             echo "Comparing benchmarks against baseline..."
-             critcmp baseline.json target/criterion/ || (
-               echo "Performance regression detected!"
-               echo "Run 'cargo bench --all-features' locally to verify changes."
-               echo "If regression is expected, update baseline: git push origin __bench_baseline__"
-               exit 1
-             )
-           else
-             echo "No baseline found, skipping comparison"
-            fi
+        run: |
+          git fetch origin __bench_baseline__:baseline-branch
+          if [ -f "baseline.json" ]; then
+            echo "Comparing benchmarks against baseline..."
+            critcmp baseline.json target/criterion/ || (
+              echo "Performance regression detected!"
+              echo "Run 'cargo bench --all-features' locally to verify changes."
+              echo "If regression is expected, update baseline: git push origin __bench_baseline__"
+              exit 1
+            )
+          else
+            echo "No baseline found, skipping comparison"
+          fi
       - if: github.ref == 'refs/heads/master'
-         run: |
-           git checkout __bench_baseline__ 2>/dev/null || git checkout -b __bench_baseline__
-           critcmp --export base > baseline.json
-           git add baseline.json
-           git commit -m "update benchmark baseline $(date +%Y-%m-%d)" --allow-empty || echo "No changes to commit"
-           git push origin __bench_baseline__
-           git checkout master
+        run: |
+          git checkout __bench_baseline__ 2>/dev/null || git checkout -b __bench_baseline__
+          critcmp --export base > baseline.json
+          git add baseline.json
+          git commit -m "update benchmark baseline $(date +%Y-%m-%d)" --allow-empty || echo "No changes to commit"
+          git push origin __bench_baseline__
+          git checkout master
