@@ -28,3 +28,42 @@ jobs:
         with:
           toolchain: stable
       - run: cargo test --all-features
+
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: cargo install critcmp
+      - run: cargo bench --all-features
+       - uses: actions/upload-artifact@v4
+         with:
+           name: bench-results-${{ github.sha }}
+           path: target/criterion/
+       - if: github.event_name == 'pull_request'
+         run: |
+           git fetch origin __bench_baseline__:baseline-branch
+           if [ -d "benchmarks" ]; then
+             echo "Comparing benchmarks against baseline..."
+             critcmp benchmarks/ target/criterion/ || (
+               echo "Performance regression detected!"
+               echo "Run 'cargo bench --all-features' locally to verify changes."
+               echo "If regression is expected, update baseline: git push origin __bench_baseline__"
+               exit 1
+             )
+           else
+             echo "No baseline benchmarks found, skipping comparison"
+            fi
+       - if: github.ref == 'refs/heads/master'
+         run: |
+           git checkout __bench_baseline__ 2>/dev/null || git checkout -b __bench_baseline__
+           mkdir -p benchmarks
+           cp -r target/criterion/* benchmarks/
+           git add benchmarks/
+           git commit -m "update benchmark baseline $(date +%Y-%m-%d)" --allow-empty || echo "No changes to commit"
+           git push origin __bench_baseline__
+           git checkout master
