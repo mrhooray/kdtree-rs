@@ -315,36 +315,46 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
-        let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
+        self.within_impl(point, radius, distance, true)
     }
 
     pub fn within_unsorted<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
     {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
-        let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.into_iter().map(Into::into).collect())
+        self.within_impl(point, radius, distance, false)
     }
 
     pub fn within_count<F>(&self, point: &[A], radius: A, distance: &F) -> Result<usize, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
     {
+        let evaluated = self.within_evaluated_heap(point, radius, distance)?;
+        Ok(evaluated.len())
+    }
+
+    fn within_impl<F>(&self, point: &[A], radius: A, distance: &F, sorted: bool) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        let evaluated = self.within_evaluated_heap(point, radius, distance)?;
+        let result = if sorted {
+            evaluated.into_sorted_vec().into_iter().map(Into::into).collect()
+        } else {
+            evaluated.into_iter().map(Into::into).collect()
+        };
+        Ok(result)
+    }
+
+    fn within_evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> Result<BinaryHeap<HeapElement<A, &T>>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
         self.check_point(point)?;
         if self.size == 0 {
-            return Ok(0);
+            return Ok(BinaryHeap::new());
         }
-        let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.len())
+        Ok(self.evaluated_heap(point, radius, distance))
     }
 
     pub fn within_bounding_box(&self, min_bounds: &[A], max_bounds: &[A]) -> Result<Vec<&T>, ErrorKind> {
