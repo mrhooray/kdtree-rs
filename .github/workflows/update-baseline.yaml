@@ -1,0 +1,32 @@
+name: update-baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: cargo bench --bench bench -- --save-baseline base
+      - run: |
+          rm -rf baseline
+          mkdir -p baseline
+          rsync -a --delete --prune-empty-dirs --include '*/' --include 'base/***' --exclude '*' target/criterion/ baseline/
+      - uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "ci: refresh criterion baseline"
+          branch: chore/update-criterion-baseline
+          title: "ci: refresh Criterion baseline"
+          body: "Triggered by workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          add-paths: |
+            baseline/**
