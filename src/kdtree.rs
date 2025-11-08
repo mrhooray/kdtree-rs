@@ -320,18 +320,6 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             return Ok(vec![]);
         }
         let evaluated = self.evaluated_heap(point, radius, distance);
-        Ok(evaluated.into_sorted_vec().into_iter().map(Into::into).collect())
-    }
-
-    pub fn within_unsorted<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
-    where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        self.check_point(point)?;
-        if self.size == 0 {
-            return Ok(vec![]);
-        }
-        let evaluated = self.evaluated_heap(point, radius, distance);
         Ok(evaluated.into_iter().map(Into::into).collect())
     }
 
