@@ -448,6 +448,15 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     }
 }
 
+#[inline]
+fn check_traversal_condition<A: Float, P, E>(
+    pending: &BinaryHeap<HeapElement<A, P>>,
+    evaluated: &BinaryHeap<HeapElement<A, E>>,
+) -> bool {
+    !pending.is_empty()
+        && (evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -pending.peek().unwrap().distance)
+}
+
 pub struct NearestIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
     point: &'a [A],
     pending: BinaryHeap<HeapElement<A, &'a KdTree<A, T, U>>>,
@@ -465,8 +474,7 @@ where
 
         let distance = self.distance;
         let point = self.point;
-        while !self.pending.is_empty()
-            && (self.evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
+        while check_traversal_condition(&self.pending, &self.evaluated)
         {
             let mut curr = self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
@@ -511,8 +519,7 @@ where
 
         let distance = self.distance;
         let point = self.point;
-        while !self.pending.is_empty()
-            && (self.evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
+        while check_traversal_condition(&self.pending, &self.evaluated)
         {
             let mut curr = &mut *self.pending.pop().unwrap().element;
             while !curr.is_leaf() {
