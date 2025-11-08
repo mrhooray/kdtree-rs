@@ -195,6 +195,24 @@ fn handles_non_finite_coordinate() {
 }
 
 #[test]
+fn handles_overflowed_distances() {
+    let point_a = ([1e200, 1e200], 1f64);
+    let point_b = ([1e200 + 1.0, 1e200 + 1.0], 2f64);
+    let query_point = ([0.0, 0.0], 0f64);
+
+    let mut kdtree = KdTree::with_capacity(2, 2);
+    kdtree.add(&point_a.0, point_a.1).unwrap();
+    kdtree.add(&point_b.0, point_b.1).unwrap();
+
+    let results = kdtree.nearest(&query_point.0, 2, &squared_euclidean).unwrap();
+    assert_eq!(results.len(), 2);
+
+    let values: Vec<_> = results.iter().map(|&(_, &v)| v).collect();
+    assert!(values.contains(&1f64));
+    assert!(values.contains(&2f64));
+}
+
+#[test]
 fn handles_singularity() {
     let mut kdtree = KdTree::with_capacity(2, 1);
     kdtree.add(&POINT_A.0, POINT_A.1).unwrap();
