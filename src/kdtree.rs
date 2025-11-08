@@ -346,7 +346,12 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         Ok(result)
     }
 
-    fn within_evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> Result<BinaryHeap<HeapElement<A, &T>>, ErrorKind>
+    fn within_evaluated_heap<F>(
+        &self,
+        point: &[A],
+        radius: A,
+        distance: &F,
+    ) -> Result<BinaryHeap<HeapElement<A, &T>>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
     {
