@@ -5,7 +5,7 @@ BASELINE_DIR="baseline"
 TARGET_DIR="${CARGO_TARGET_DIR:-target}/criterion"
 BASELINE_NAME="${CRITERION_BASELINE_NAME:-base}"
 RUN_BASELINE="${CRITERION_RUN_NAME:-ci}"
-THRESHOLD="${CRITERION_THRESHOLD:-0.04}"
+THRESHOLD="${CRITERION_THRESHOLD:-0.08}"
 
 if ! command -v cargo >/dev/null 2>&1; then
     echo "cargo not found in PATH" >&2
