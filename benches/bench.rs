@@ -1,23 +1,31 @@
 extern crate criterion;
 extern crate kdtree;
-extern crate rand;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use kdtree::KdTree;
 use kdtree::distance::squared_euclidean;
 
-fn rand_data() -> ([f64; 3], f64) {
-    rand::random()
+fn deterministic_points(len: usize) -> (Vec<([f64; 3], f64)>, ([f64; 3], f64)) {
+    fn next(state: &mut u64) -> f64 {
+        *state = state.wrapping_mul(636_413_622_384_679_3005).wrapping_add(1);
+        ((*state >> 11) as f64) / ((1u64 << 53) as f64)
+    }
+
+    let mut state = 0x1a2b_3c4d_5e6f_7788;
+    let mut points = Vec::with_capacity(len);
+    for _ in 0..len {
+        let coords = [next(&mut state), next(&mut state), next(&mut state)];
+        let value = next(&mut state);
+        points.push((coords, value));
+    }
+    let point = ([next(&mut state), next(&mut state), next(&mut state)], next(&mut state));
+    (points, point)
 }
 
 fn bench_add_to_kdtree_with_1k_3d_points(c: &mut Criterion) {
     let len = 1000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -28,12 +36,8 @@ fn bench_add_to_kdtree_with_1k_3d_points(c: &mut Criterion) {
 
 fn bench_nearest_from_kdtree_with_1k_3d_points(c: &mut Criterion) {
     let len = 1000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -44,12 +48,8 @@ fn bench_nearest_from_kdtree_with_1k_3d_points(c: &mut Criterion) {
 
 fn bench_within_2k_data_01_radius(c: &mut Criterion) {
     let len = 2000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -60,12 +60,8 @@ fn bench_within_2k_data_01_radius(c: &mut Criterion) {
 
 fn bench_within_2k_data_02_radius(c: &mut Criterion) {
     let len = 2000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -76,12 +72,8 @@ fn bench_within_2k_data_02_radius(c: &mut Criterion) {
 
 fn bench_within_unsorted_2k_data_01_radius(c: &mut Criterion) {
     let len = 2000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -92,12 +84,8 @@ fn bench_within_unsorted_2k_data_01_radius(c: &mut Criterion) {
 
 fn bench_within_unsorted_2k_data_02_radius(c: &mut Criterion) {
     let len = 2000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -108,12 +96,8 @@ fn bench_within_unsorted_2k_data_02_radius(c: &mut Criterion) {
 
 fn bench_within_count_2k_data_01_radius(c: &mut Criterion) {
     let len = 2000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
@@ -124,12 +108,8 @@ fn bench_within_count_2k_data_01_radius(c: &mut Criterion) {
 
 fn bench_within_count_2k_data_02_radius(c: &mut Criterion) {
     let len = 2000usize;
-    let point = rand_data();
-    let mut points = vec![];
+    let (points, point) = deterministic_points(len);
     let mut kdtree = KdTree::with_capacity(3, 16);
-    for _ in 0..len {
-        points.push(rand_data());
-    }
     for point in points.iter() {
         kdtree.add(&point.0, point.1).unwrap();
     }
