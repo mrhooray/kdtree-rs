@@ -28,3 +28,14 @@ jobs:
         with:
           toolchain: stable
       - run: cargo test --all-features
+  bench:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: cargo install critcmp --locked
+      - run: bash benches/ci.sh
