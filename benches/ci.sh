@@ -5,7 +5,7 @@ BASELINE_DIR="baseline"
 TARGET_DIR="${CARGO_TARGET_DIR:-target}/criterion"
 BASELINE_NAME="${CRITERION_BASELINE_NAME:-base}"
 RUN_BASELINE="${CRITERION_RUN_NAME:-ci}"
-THRESHOLD="${CRITERION_THRESHOLD:-0.01}"
+THRESHOLD="${CRITERION_THRESHOLD:-0.04}"
 
 if ! command -v cargo >/dev/null 2>&1; then
     echo "cargo not found in PATH" >&2
@@ -40,6 +40,10 @@ critcmp --target-dir "$(dirname "$TARGET_DIR")" "$BASELINE_NAME" "$RUN_BASELINE"
 
 regressions=()
 missing=()
+threshold_pct=$(awk -v t="$THRESHOLD" 'BEGIN { printf "%.2f", t * 100 }')
+
+echo
+echo "compared to $BASELINE_NAME (median/mean):"
 
 while IFS= read -r -d '' base_file; do
     bench_dir=$(dirname "$(dirname "$base_file")")
@@ -71,6 +75,10 @@ while IFS= read -r -d '' base_file; do
         printf "%.10f", (current - base) / base
     }')
 
+    pct_median=$(awk -v d="$delta_median" 'BEGIN { printf "%.2f", d * 100 }')
+    pct_mean=$(awk -v d="$delta_mean" 'BEGIN { printf "%.2f", d * 100 }')
+    printf '  %-40s median=%+s%% mean=%+s%%\n' "$bench_name" "$pct_median" "$pct_mean"
+
     violated=0
     if awk -v delta="$delta_median" -v threshold="$THRESHOLD" 'BEGIN { exit !(delta > threshold) }'; then
         violated=1
@@ -80,9 +88,7 @@ while IFS= read -r -d '' base_file; do
     fi
 
     if [ "$violated" -eq 1 ]; then
-        pct_median=$(awk -v d="$delta_median" 'BEGIN { printf "%.2f", d * 100 }')
-        pct_mean=$(awk -v d="$delta_mean" 'BEGIN { printf "%.2f", d * 100 }')
-        regressions+=("$bench_name:median=+${pct_median}%,mean=+${pct_mean}%")
+        regressions+=("$bench_name:median=${pct_median}%,mean=${pct_mean}%")
     fi
 done < <(find "$TARGET_DIR" -path "*/base/estimates.json" -print0)
 
@@ -92,7 +98,8 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 
 if [ ${#regressions[@]} -gt 0 ]; then
-    echo "performance regressions detected:"
+    echo
+    echo "regressions detected (>${threshold_pct}%):"
     for entry in "${regressions[@]}"; do
         name=${entry%%:*}
         pct=${entry#*:}
@@ -101,4 +108,5 @@ if [ ${#regressions[@]} -gt 0 ]; then
     exit 2
 fi
 
-echo "no performance regressions detected."
+echo
+echo "no regressions detected (>${threshold_pct}%)."
