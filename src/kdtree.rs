@@ -250,7 +250,7 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             element: d,
         });
         for element in iter {
-            if element <= max_dist {
+            if element.distance <= max_dist {
                 if evaluated.len() < num {
                     evaluated.push(element);
                 } else if element < *evaluated.peek().unwrap() {
