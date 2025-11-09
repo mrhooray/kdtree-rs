@@ -182,6 +182,33 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     where
         F: Fn(&[A], &[A]) -> A,
     {
+        self.nearest_within_radius_internal(point, num, A::max_value(), distance)
+    }
+
+    pub fn nearest_within_radius<F>(
+        &self,
+        point: &[A],
+        num: usize,
+        radius: Option<A>,
+        distance: &F,
+    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        let radius = radius.unwrap_or_else(A::max_value);
+        self.nearest_within_radius_internal(point, num, radius, distance)
+    }
+
+    fn nearest_within_radius_internal<F>(
+        &self,
+        point: &[A],
+        num: usize,
+        radius: A,
+        distance: &F,
+    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
         self.check_point(point)?;
         let num = std::cmp::min(num, self.size);
         if num == 0 {
@@ -194,9 +221,10 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             element: self,
         });
         while !pending.is_empty()
+            && (-pending.peek().unwrap().distance <= radius)
             && (evaluated.len() < num || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
         {
-            self.nearest_step(point, num, A::max_value(), distance, &mut pending, &mut evaluated);
+            self.nearest_step(point, num, radius, distance, &mut pending, &mut evaluated);
         }
         Ok(evaluated
             .into_sorted_vec()
@@ -273,6 +301,19 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     where
         F: Fn(&[A], &[A]) -> A,
     {
+        self.iter_nearest_within_radius(point, None, distance)
+            .map(|inner| NearestIter { inner })
+    }
+
+    pub fn iter_nearest_within_radius<'a, F>(
+        &'a self,
+        point: &'a [A],
+        radius: Option<A>,
+        distance: &'a F,
+    ) -> Result<NearestWithinRadiusIter<'a, A, T, U, F>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
         self.check_point(point)?;
         let mut pending = BinaryHeap::new();
         let evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
@@ -280,11 +321,12 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             distance: A::zero(),
             element: self,
         });
-        Ok(NearestIter {
+        Ok(NearestWithinRadiusIter {
             point,
             pending,
             evaluated,
             distance,
+            radius: radius.unwrap_or_else(A::max_value),
         })
     }
 
@@ -296,6 +338,19 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     where
         F: Fn(&[A], &[A]) -> A,
     {
+        let radius_iter = self.iter_nearest_within_radius_mut(point, None, distance)?;
+        Ok(NearestIterMut { inner: radius_iter })
+    }
+
+    pub fn iter_nearest_within_radius_mut<'a, F>(
+        &'a mut self,
+        point: &'a [A],
+        radius: Option<A>,
+        distance: &'a F,
+    ) -> Result<NearestWithinRadiusIterMut<'a, A, T, U, F>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
         self.check_point(point)?;
         let mut pending = BinaryHeap::new();
         let evaluated = BinaryHeap::<HeapElement<A, &mut T>>::new();
@@ -303,11 +358,12 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
             distance: A::zero(),
             element: self,
         });
-        Ok(NearestIterMut {
+        Ok(NearestWithinRadiusIterMut {
             point,
             pending,
             evaluated,
             distance,
+            radius: radius.unwrap_or_else(A::max_value),
         })
     }
 
@@ -438,14 +494,15 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     }
 }
 
-pub struct NearestIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
+pub struct NearestWithinRadiusIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
     point: &'a [A],
     pending: BinaryHeap<HeapElement<A, &'a KdTree<A, T, U>>>,
     evaluated: BinaryHeap<HeapElement<A, &'a T>>,
     distance: &'a F,
+    radius: A,
 }
 
-impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIter<'a, A, T, U, F>
+impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestWithinRadiusIter<'a, A, T, U, F>
 where
     F: Fn(&[A], &[A]) -> A,
 {
@@ -455,7 +512,9 @@ where
 
         let distance = self.distance;
         let point = self.point;
+        let radius_limit = self.radius;
         while !self.pending.is_empty()
+            && (-self.pending.peek().unwrap().distance <= radius_limit)
             && (self.evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
             let mut curr = self.pending.pop().unwrap().element;
@@ -468,30 +527,70 @@ where
                     candidate = curr.left.as_ref().unwrap();
                     curr = curr.right.as_ref().unwrap();
                 }
-                self.pending.push(HeapElement {
-                    distance: -distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance),
-                    element: &**candidate,
-                });
+                let candidate_distance =
+                    distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
+                if candidate_distance <= radius_limit {
+                    self.pending.push(HeapElement {
+                        distance: -candidate_distance,
+                        element: &**candidate,
+                    });
+                }
             }
             let points = curr.points.as_ref().unwrap().iter();
             let bucket = curr.bucket.as_ref().unwrap().iter();
-            self.evaluated.extend(points.zip(bucket).map(|(p, d)| HeapElement {
-                distance: -distance(point, p.as_ref()),
-                element: d,
+            self.evaluated.extend(points.zip(bucket).filter_map(|(p, d)| {
+                let dist = distance(point, p.as_ref());
+                if dist <= radius_limit {
+                    Some(HeapElement {
+                        distance: -dist,
+                        element: d,
+                    })
+                } else {
+                    None
+                }
             }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
     }
 }
 
+pub struct NearestIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
+    inner: NearestWithinRadiusIter<'a, A, T, U, F>,
+}
+
+impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIter<'a, A, T, U, F>
+where
+    F: Fn(&[A], &[A]) -> A,
+{
+    type Item = (A, &'a T);
+    fn next(&mut self) -> Option<(A, &'a T)> {
+        self.inner.next()
+    }
+}
+
 pub struct NearestIterMut<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
+    inner: NearestWithinRadiusIterMut<'a, A, T, U, F>,
+}
+
+impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIterMut<'a, A, T, U, F>
+where
+    F: Fn(&[A], &[A]) -> A,
+{
+    type Item = (A, &'a mut T);
+    fn next(&mut self) -> Option<(A, &'a mut T)> {
+        self.inner.next()
+    }
+}
+
+pub struct NearestWithinRadiusIterMut<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
     point: &'a [A],
     pending: BinaryHeap<HeapElement<A, &'a mut KdTree<A, T, U>>>,
     evaluated: BinaryHeap<HeapElement<A, &'a mut T>>,
     distance: &'a F,
+    radius: A,
 }
 
-impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIterMut<'a, A, T, U, F>
+impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestWithinRadiusIterMut<'a, A, T, U, F>
 where
     F: Fn(&[A], &[A]) -> A,
 {
@@ -501,7 +600,9 @@ where
 
         let distance = self.distance;
         let point = self.point;
+        let radius_limit = self.radius;
         while !self.pending.is_empty()
+            && (-self.pending.peek().unwrap().distance <= radius_limit)
             && (self.evaluated.peek().map_or(A::max_value(), |x| -x.distance) >= -self.pending.peek().unwrap().distance)
         {
             let mut curr = &mut *self.pending.pop().unwrap().element;
@@ -514,16 +615,27 @@ where
                     candidate = curr.left.as_mut().unwrap();
                     curr = curr.right.as_mut().unwrap();
                 }
-                self.pending.push(HeapElement {
-                    distance: -distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance),
-                    element: &mut **candidate,
-                });
+                let candidate_distance =
+                    distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
+                if candidate_distance <= radius_limit {
+                    self.pending.push(HeapElement {
+                        distance: -candidate_distance,
+                        element: &mut **candidate,
+                    });
+                }
             }
             let points = curr.points.as_ref().unwrap().iter();
             let bucket = curr.bucket.as_mut().unwrap().iter_mut();
-            self.evaluated.extend(points.zip(bucket).map(|(p, d)| HeapElement {
-                distance: -distance(point, p.as_ref()),
-                element: d,
+            self.evaluated.extend(points.zip(bucket).filter_map(|(p, d)| {
+                let dist = distance(point, p.as_ref());
+                if dist <= radius_limit {
+                    Some(HeapElement {
+                        distance: -dist,
+                        element: d,
+                    })
+                } else {
+                    None
+                }
             }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))

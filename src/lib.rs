@@ -51,7 +51,19 @@
 //!     kdtree.nearest(&b.0, 4, &squared_euclidean).unwrap(),
 //!     vec![(0f64, &1), (2f64, &0), (2f64, &2), (8f64, &3)]
 //! );
+//! assert_eq!(
+//!     kdtree
+//!         .nearest_within_radius(&a.0, 4, Some(5f64), &squared_euclidean)
+//!         .unwrap(),
+//!     vec![(0f64, &0), (2f64, &1)]
+//! );
 //! ```
+//!
+//! `nearest_within_radius` keeps the exact ordering guarantees of `nearest`; it
+//! still truncates by `k` and only filters out items whose distance exceeds the
+//! optional `radius`. Mutating results remains an iterator-only operation
+//! (e.g. `iter_nearest_within_radius_mut`) so the tree never hands out overlapping
+//! mutable borrows.
 
 #[cfg(feature = "serialize")]
 #[cfg_attr(feature = "serialize", macro_use)]

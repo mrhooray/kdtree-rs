@@ -47,6 +47,19 @@ fn it_works() {
     kdtree.nearest(&POINT_B.0, 4, &new_dist).unwrap();
     assert_eq!(count.swap(0, Ordering::SeqCst), 6);
 
+    kdtree.nearest_within_radius(&POINT_A.0, 4, None, &new_dist).unwrap();
+    assert_eq!(count.swap(0, Ordering::SeqCst), 6);
+
+    kdtree
+        .nearest_within_radius(&POINT_A.0, 4, Some(0.0), &new_dist)
+        .unwrap();
+    assert_eq!(count.swap(0, Ordering::SeqCst), 2);
+
+    kdtree
+        .nearest_within_radius(&POINT_B.0, 4, Some(1.0), &new_dist)
+        .unwrap();
+    assert_eq!(count.swap(0, Ordering::SeqCst), 3);
+
     kdtree.within(&POINT_A.0, 0.0, &new_dist).unwrap();
     assert_eq!(count.swap(0, Ordering::SeqCst), 2);
 
