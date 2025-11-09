@@ -57,6 +57,61 @@ fn iter_nearest_mut_applies_updates() {
 }
 
 #[test]
+fn nearest_within_radius_matches_unbounded_when_unlimited() {
+    let tree = basic_tree();
+    let unrestricted = tree.nearest(&POINT_A.0, 4, &squared_euclidean).unwrap();
+    let bounded = tree
+        .nearest_within_radius(&POINT_A.0, 4, None, &squared_euclidean)
+        .unwrap();
+    assert_eq!(unrestricted, bounded);
+}
+
+#[test]
+fn nearest_within_radius_respects_limit() {
+    let tree = basic_tree();
+    let filtered = tree
+        .nearest_within_radius(&POINT_A.0, 4, Some(1.5), &squared_euclidean)
+        .unwrap();
+    assert_eq!(filtered, vec![(0f64, &0)]);
+}
+
+#[test]
+fn nearest_within_radius_returns_empty_for_zero_k() {
+    let tree = basic_tree();
+    let filtered = tree
+        .nearest_within_radius(&POINT_A.0, 0, Some(1.5), &squared_euclidean)
+        .unwrap();
+    assert!(filtered.is_empty());
+}
+
+#[test]
+fn iter_nearest_within_radius_collects_results() {
+    let tree = basic_tree();
+    let collected: Vec<_> = tree
+        .iter_nearest_within_radius(&POINT_B.0, Some(3.0), &squared_euclidean)
+        .unwrap()
+        .collect();
+    assert_eq!(collected, vec![(0f64, &1), (2f64, &0), (2f64, &2)]);
+}
+
+#[test]
+fn iter_nearest_within_radius_mut_changes_only_within_radius() {
+    let mut tree = basic_tree();
+    {
+        let mut iter = tree
+            .iter_nearest_within_radius_mut(&POINT_A.0, Some(0.5), &squared_euclidean)
+            .unwrap();
+        let (dist, value) = iter.next().unwrap();
+        assert_eq!(dist, 0f64);
+        *value = 42;
+        assert!(iter.next().is_none());
+    }
+    let collected = tree.nearest(&POINT_A.0, 2, &squared_euclidean).unwrap();
+    assert_eq!(collected[0], (0f64, &42));
+    assert_eq!(collected[1], (2f64, &1));
+}
+
+#[test]
 fn nearest_supports_vec_points() {
     let dimensions = 2;
     let capacity_per_node = 2;
