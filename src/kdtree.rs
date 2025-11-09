@@ -391,7 +391,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         Ok(evaluated.len())
     }
 
-    pub fn within_bounding_box(&self, min_bounds: &[A], max_bounds: &[A]) -> Result<Vec<&T>, ErrorKind> {
+    pub fn bounding_box(&self, min_bounds: &[A], max_bounds: &[A]) -> Result<Vec<&T>, ErrorKind> {
         self.check_point(min_bounds)?;
         self.check_point(max_bounds)?;
         if self.size == 0 {
@@ -711,7 +711,7 @@ mod tests {
     }
 
     #[test]
-    fn test_within_bounding_box() {
+    fn test_bounding_box() {
         let mut tree = KdTree::with_capacity(2, 2);
         for i in 0..10 {
             for j in 0..10 {
@@ -721,7 +721,7 @@ mod tests {
         }
 
         let within: Vec<String> = tree
-            .within_bounding_box(&[4.0, 4.0], &[6.0, 6.0])
+            .bounding_box(&[4.0, 4.0], &[6.0, 6.0])
             .unwrap()
             .iter()
             .cloned()

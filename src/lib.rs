@@ -64,6 +64,11 @@
 //! optional `radius`. Mutating results remains an iterator-only operation
 //! (e.g. `iter_nearest_within_radius_mut`) so the tree never hands out overlapping
 //! mutable borrows.
+//!
+//! `within` (and `within_count`) produce unordered batches that include every point
+//! inside the requested radius—sort the returned vector manually if you need a
+//! deterministic order. Use `bounding_box` for axis-aligned range queries when you
+//! only need raw `&T` references without ordering guarantees.
 
 #[cfg(feature = "serialize")]
 #[cfg_attr(feature = "serialize", macro_use)]
