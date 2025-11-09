@@ -1,6 +1,6 @@
 mod _util;
 
-use _util::assertions::{assert_ordered_usize, assert_unordered_usize};
+use _util::assertions::assert_unordered_usize;
 use _util::fixtures::{POINT_A, POINT_B, basic_tree};
 use kdtree::KdTree;
 use kdtree::distance::squared_euclidean;
@@ -9,34 +9,15 @@ use kdtree::distance::squared_euclidean;
 fn within_queries_match_expected() {
     let tree = basic_tree();
 
-    assert_ordered_usize(tree.within(&POINT_A.0, 0.0, &squared_euclidean).unwrap(), &[(0.0, 0)]);
-    assert_ordered_usize(tree.within(&POINT_B.0, 1.0, &squared_euclidean).unwrap(), &[(0.0, 1)]);
-    assert_ordered_usize(
+    assert_unordered_usize(tree.within(&POINT_A.0, 0.0, &squared_euclidean).unwrap(), &[(0.0, 0)]);
+    assert_unordered_usize(tree.within(&POINT_B.0, 1.0, &squared_euclidean).unwrap(), &[(0.0, 1)]);
+    assert_unordered_usize(
         tree.within(&POINT_B.0, 2.0, &squared_euclidean).unwrap(),
         &[(0.0, 1), (2.0, 2), (2.0, 0)],
     );
-}
 
-#[test]
-fn within_unsorted_matches_expected() {
-    let tree = basic_tree();
-
-    assert_unordered_usize(
-        tree.within_unsorted(&POINT_A.0, 0.0, &squared_euclidean).unwrap(),
-        &[(0.0, 0)],
-    );
     assert_eq!(tree.within_count(&POINT_A.0, 0.0, &squared_euclidean).unwrap(), 1);
-
-    assert_unordered_usize(
-        tree.within_unsorted(&POINT_B.0, 1.0, &squared_euclidean).unwrap(),
-        &[(0.0, 1)],
-    );
     assert_eq!(tree.within_count(&POINT_B.0, 1.0, &squared_euclidean).unwrap(), 1);
-
-    assert_unordered_usize(
-        tree.within_unsorted(&POINT_B.0, 2.0, &squared_euclidean).unwrap(),
-        &[(0.0, 1), (2.0, 2), (2.0, 0)],
-    );
     assert_eq!(tree.within_count(&POINT_B.0, 2.0, &squared_euclidean).unwrap(), 3);
 }
 
@@ -53,14 +34,14 @@ fn within_handles_pending_order_tree() {
     tree.add(&item3.0, item3.1).unwrap();
     tree.add(&item4.0, item4.1).unwrap();
 
-    assert_ordered_usize(
+    assert_unordered_usize(
         tree.within(&[50f64], 25.0, &squared_euclidean).unwrap(),
         &[(25.0, 3), (25.0, 4)],
     );
-    assert_ordered_usize(
+    assert_unordered_usize(
         tree.within(&[50f64], 30.0, &squared_euclidean).unwrap(),
         &[(25.0, 3), (25.0, 4)],
     );
-    assert_ordered_usize(tree.within(&[55f64], 5.0, &squared_euclidean).unwrap(), &[(0.0, 4)]);
-    assert_ordered_usize(tree.within(&[56f64], 5.0, &squared_euclidean).unwrap(), &[(1.0, 4)]);
+    assert_unordered_usize(tree.within(&[55f64], 5.0, &squared_euclidean).unwrap(), &[(0.0, 4)]);
+    assert_unordered_usize(tree.within(&[56f64], 5.0, &squared_euclidean).unwrap(), &[(1.0, 4)]);
 }

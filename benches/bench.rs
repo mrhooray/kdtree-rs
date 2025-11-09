@@ -117,30 +117,6 @@ fn bench_within_2k_data_02_radius(c: &mut Criterion) {
     });
 }
 
-fn bench_within_unsorted_2k_data_01_radius(c: &mut Criterion) {
-    let len = 2000usize;
-    let (points, point) = deterministic_points(len);
-    let mut kdtree = KdTree::with_capacity(3, 16);
-    for point in points.iter() {
-        kdtree.add(&point.0, point.1).unwrap();
-    }
-    c.bench_function("bench_within_unsorted_2k_data_01_radius", |b| {
-        b.iter(|| kdtree.within_unsorted(&point.0, 0.1, &squared_euclidean).unwrap());
-    });
-}
-
-fn bench_within_unsorted_2k_data_02_radius(c: &mut Criterion) {
-    let len = 2000usize;
-    let (points, point) = deterministic_points(len);
-    let mut kdtree = KdTree::with_capacity(3, 16);
-    for point in points.iter() {
-        kdtree.add(&point.0, point.1).unwrap();
-    }
-    c.bench_function("bench_within_unsorted_2k_data_02_radius", |b| {
-        b.iter(|| kdtree.within_unsorted(&point.0, 0.2, &squared_euclidean).unwrap());
-    });
-}
-
 fn bench_within_count_2k_data_01_radius(c: &mut Criterion) {
     let len = 2000usize;
     let (points, point) = deterministic_points(len);
@@ -173,8 +149,6 @@ criterion_group!(
     bench_nearest_within_radius_comparisons,
     bench_within_2k_data_01_radius,
     bench_within_2k_data_02_radius,
-    bench_within_unsorted_2k_data_01_radius,
-    bench_within_unsorted_2k_data_02_radius,
     bench_within_count_2k_data_01_radius,
     bench_within_count_2k_data_02_radius,
 );
