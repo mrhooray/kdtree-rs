@@ -18,6 +18,7 @@ pub mod fixtures {
 }
 
 pub mod assertions {
+    #[allow(dead_code)]
     pub fn assert_ordered_usize(results: Vec<(f64, &usize)>, expected: &[(f64, usize)]) {
         assert_eq!(normalize(results), expected);
     }
