@@ -4,7 +4,6 @@ use num_traits::{Float, One, Zero};
 use thiserror::Error;
 
 use crate::heap_element::HeapElement;
-use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
@@ -346,7 +345,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
                 curr = curr.right.as_ref().unwrap();
             }
             let candidate_to_space =
-                util::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
+                Self::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
             if candidate_to_space <= evaluated_dist {
                 pending.push(HeapElement {
                     distance: candidate_to_space * -A::one(),
@@ -371,6 +370,24 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
                 }
             }
         }
+    }
+
+    fn distance_to_space<F, V>(p1: &[V], min_bounds: &[V], max_bounds: &[V], distance: &F) -> V
+    where
+        F: Fn(&[V], &[V]) -> V,
+        V: Float,
+    {
+        let mut p2 = vec![V::nan(); p1.len()];
+        for i in 0..p1.len() {
+            if p1[i] > max_bounds[i] {
+                p2[i] = max_bounds[i];
+            } else if p1[i] < min_bounds[i] {
+                p2[i] = min_bounds[i];
+            } else {
+                p2[i] = p1[i];
+            }
+        }
+        distance(p1, &p2[..])
     }
 
     // ============================================================================
@@ -403,6 +420,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     // ============================================================================
     // === BOUNDING BOX ===
     // ============================================================================
+
     pub fn bounding_box(&self, min_bounds: &[A], max_bounds: &[A]) -> Result<Vec<&T>, ErrorKind> {
         self.check_point(min_bounds)?;
         self.check_point(max_bounds)?;
@@ -417,7 +435,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
                 let points = curr.points.as_ref().unwrap().iter();
                 let bucket = curr.bucket.as_ref().unwrap().iter();
                 for (p, b) in points.zip(bucket) {
-                    if util::within_bounding_box(p.as_ref(), min_bounds, max_bounds) {
+                    if Self::in_bounding_box(p.as_ref(), min_bounds, max_bounds) {
                         evaluated.push(b);
                     }
                 }
@@ -432,6 +450,18 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         }
 
         Ok(evaluated)
+    }
+
+    fn in_bounding_box<V>(p: &[V], min_bounds: &[V], max_bounds: &[V]) -> bool
+    where
+        V: Float,
+    {
+        for ((l, h), v) in min_bounds.iter().zip(max_bounds.iter()).zip(p) {
+            if v < l || v > h {
+                return false;
+            }
+        }
+        true
     }
 
     // ============================================================================
@@ -543,8 +573,6 @@ where
 {
     type Item = (A, &'a T);
     fn next(&mut self) -> Option<(A, &'a T)> {
-        use util::distance_to_space;
-
         let distance = self.distance;
         let point = self.point;
         let radius_limit = self.radius;
@@ -563,7 +591,7 @@ where
                     curr = curr.right.as_ref().unwrap();
                 }
                 let candidate_distance =
-                    distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
+                    KdTree::<A, T, U>::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
                 if candidate_distance <= radius_limit {
                     self.pending.push(HeapElement {
                         distance: -candidate_distance,
@@ -603,8 +631,6 @@ where
 {
     type Item = (A, &'a mut T);
     fn next(&mut self) -> Option<(A, &'a mut T)> {
-        use util::distance_to_space;
-
         let distance = self.distance;
         let point = self.point;
         let radius_limit = self.radius;
@@ -623,7 +649,7 @@ where
                     curr = curr.right.as_mut().unwrap();
                 }
                 let candidate_distance =
-                    distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
+                    KdTree::<A, T, U>::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
                 if candidate_distance <= radius_limit {
                     self.pending.push(HeapElement {
                         distance: -candidate_distance,
@@ -674,5 +700,77 @@ mod tests {
         }
         assert_eq!(tree.size(), capacity + 1);
         assert!(tree.left.is_some() && tree.right.is_some());
+    }
+
+    #[test]
+    fn test_normal_distance_to_space() {
+        use crate::distance::squared_euclidean;
+        let dis =
+            KdTree::<f64, i32, [f64; 2]>::distance_to_space(&[0.0, 0.0], &[1.0, 1.0], &[2.0, 2.0], &squared_euclidean);
+        assert_eq!(dis, 2.0);
+    }
+
+    #[test]
+    fn test_distance_outside_inf() {
+        use crate::distance::squared_euclidean;
+        let dis = KdTree::<f64, i32, [f64; 2]>::distance_to_space(
+            &[0.0, 0.0],
+            &[1.0, 1.0],
+            &[f64::INFINITY, f64::INFINITY],
+            &squared_euclidean,
+        );
+        assert_eq!(dis, 2.0);
+    }
+
+    #[test]
+    fn test_distance_inside_inf() {
+        use crate::distance::squared_euclidean;
+        let dis = KdTree::<f64, i32, [f64; 2]>::distance_to_space(
+            &[2.0, 2.0],
+            &[f64::NEG_INFINITY, f64::NEG_INFINITY],
+            &[f64::INFINITY, f64::INFINITY],
+            &squared_euclidean,
+        );
+        assert_eq!(dis, 0.0);
+    }
+
+    #[test]
+    fn test_distance_inside_normal() {
+        use crate::distance::squared_euclidean;
+        let dis =
+            KdTree::<f64, i32, [f64; 2]>::distance_to_space(&[2.0, 2.0], &[0.0, 0.0], &[3.0, 3.0], &squared_euclidean);
+        assert_eq!(dis, 0.0);
+    }
+
+    #[test]
+    fn distance_to_half_space() {
+        use crate::distance::squared_euclidean;
+        let dis = KdTree::<f64, i32, [f64; 2]>::distance_to_space(
+            &[-2.0, 0.0],
+            &[0.0, f64::NEG_INFINITY],
+            &[f64::INFINITY, f64::INFINITY],
+            &squared_euclidean,
+        );
+        assert_eq!(dis, 4.0);
+    }
+
+    #[test]
+    fn test_in_bounding_box_via_bounding_box() {
+        let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
+        tree.add([1.0, 1.0], 1).unwrap();
+        tree.add([0.5, 0.5], 2).unwrap();
+        tree.add([2.0, 2.0], 3).unwrap();
+
+        // Test bounding box that includes first two points
+        let result = tree.bounding_box(&[0.0, 0.0], &[1.5, 1.5]).unwrap();
+        assert_eq!(result.len(), 2);
+
+        // Test bounding box that includes only one point
+        let result = tree.bounding_box(&[1.0, 1.0], &[1.0, 1.0]).unwrap();
+        assert_eq!(result.len(), 1);
+
+        // Test bounding box that includes no points
+        let result = tree.bounding_box(&[2.5, 2.5], &[3.0, 3.0]).unwrap();
+        assert_eq!(result.len(), 0);
     }
 }
