@@ -1,9 +1,16 @@
-mod _util;
+mod __util__;
 
-use _util::assertions::assert_unordered_usize;
-use _util::fixtures::{POINT_A, POINT_B, basic_tree};
+use __util__::{POINT_A, POINT_B, basic_tree};
 use kdtree::KdTree;
 use kdtree::distance::squared_euclidean;
+
+fn assert_unordered_usize(results: Vec<(f64, &usize)>, expected: &[(f64, usize)]) {
+    let mut actual = results.into_iter().map(|(d, v)| (d, *v)).collect::<Vec<_>>();
+    let mut expected_vec = expected.to_vec();
+    actual.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then_with(|| a.1.cmp(&b.1)));
+    expected_vec.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then_with(|| a.1.cmp(&b.1)));
+    assert_eq!(actual, expected_vec);
+}
 
 #[test]
 fn within_queries_match_expected() {
