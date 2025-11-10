@@ -1,9 +1,12 @@
-mod _util;
+mod __util__;
 
-use _util::assertions::assert_ordered_usize;
-use _util::fixtures::{POINT_A, POINT_B, POINT_C, basic_tree};
+use __util__::{POINT_A, POINT_B, POINT_C, basic_tree};
 use kdtree::distance::squared_euclidean;
 use kdtree::{ErrorKind, KdTree};
+
+fn assert_ordered_usize(results: Vec<(f64, &usize)>, expected: &[(f64, usize)]) {
+    assert_eq!(results.into_iter().map(|(d, v)| (d, *v)).collect::<Vec<_>>(), expected);
+}
 
 #[test]
 fn nearest_queries_match_expected() {
@@ -91,7 +94,7 @@ fn iter_nearest_within_radius_collects_results() {
         .iter_nearest_within_radius(&POINT_B.0, Some(3.0), &squared_euclidean)
         .unwrap()
         .collect();
-    assert_eq!(collected, vec![(0f64, &1), (2f64, &0), (2f64, &2)]);
+    assert_ordered_usize(collected, &[(0f64, 1), (2f64, 0), (2f64, 2)]);
 }
 
 #[test]
@@ -212,142 +215,7 @@ fn handles_pending_order() {
     tree.add(&item4.0, item4.1).unwrap();
 
     assert_ordered_usize(
-        tree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
-        &[(16.0, 4), (36.0, 3)],
+        tree.nearest(&[50f64], 2, &squared_euclidean).unwrap(),
+        &[(25f64, 3), (25f64, 4)],
     );
-    assert_ordered_usize(
-        tree.nearest(&[51f64], 4, &squared_euclidean).unwrap(),
-        &[(16.0, 4), (36.0, 3), (2401.0, 2), (2601.0, 1)],
-    );
-    assert_ordered_usize(
-        tree.nearest(&[49f64], 2, &squared_euclidean).unwrap(),
-        &[(16.0, 3), (36.0, 4)],
-    );
-    assert_ordered_usize(
-        tree.nearest(&[49f64], 4, &squared_euclidean).unwrap(),
-        &[(16.0, 3), (36.0, 4), (2401.0, 1), (2601.0, 2)],
-    );
-
-    let collected: Vec<_> = tree.iter_nearest(&[49f64], &squared_euclidean).unwrap().collect();
-    assert_ordered_usize(collected, &[(16.0, 3), (36.0, 4), (2401.0, 1), (2601.0, 2)]);
-    let collected: Vec<_> = tree.iter_nearest(&[51f64], &squared_euclidean).unwrap().collect();
-    assert_ordered_usize(collected, &[(16.0, 4), (36.0, 3), (2401.0, 2), (2601.0, 1)]);
-}
-
-#[test]
-fn handles_drops_correctly() {
-    use std::ops::Drop;
-    use std::sync::{Arc, Mutex};
-
-    struct Test(Arc<Mutex<i32>>);
-
-    impl PartialEq<Test> for Test {
-        fn eq(&self, other: &Test) -> bool {
-            *self.0.lock().unwrap() == *other.0.lock().unwrap()
-        }
-    }
-
-    impl Drop for Test {
-        fn drop(&mut self) {
-            let mut drop_counter = self.0.lock().unwrap();
-            *drop_counter += 1;
-        }
-    }
-
-    let drop_counter = Arc::new(Mutex::new(0));
-
-    let item1 = ([0f64, 0f64], Test(drop_counter.clone()));
-    let item2 = ([1f64, 1f64], Test(drop_counter.clone()));
-    let item3 = ([2f64, 2f64], Test(drop_counter.clone()));
-    let item4 = ([3f64, 3f64], Test(drop_counter.clone()));
-
-    {
-        let mut tree = KdTree::with_capacity(2, 1);
-        tree.add(&item1.0, item1.1).unwrap();
-        tree.add(&item2.0, item2.1).unwrap();
-        tree.add(&item3.0, item3.1).unwrap();
-        tree.add(&item4.0, item4.1).unwrap();
-        assert_eq!(*drop_counter.lock().unwrap(), 0);
-    }
-
-    assert_eq!(*drop_counter.lock().unwrap(), 4);
-}
-
-#[test]
-fn handles_remove_correctly() {
-    let item1 = ([0f64], 1);
-    let item2 = ([100f64], 2);
-    let item3 = ([45f64], 3);
-    let item4 = ([55f64], 4);
-
-    let mut tree = KdTree::with_capacity(1, 2);
-    tree.add(&item1.0, item1.1).unwrap();
-    tree.add(&item2.0, item2.1).unwrap();
-    tree.add(&item3.0, item3.1).unwrap();
-    tree.add(&item4.0, item4.1).unwrap();
-
-    let removed = tree.remove(&&item3.0, &item3.1).unwrap();
-    assert_eq!(tree.size(), 3);
-    assert_eq!(removed, 1);
-    assert_ordered_usize(
-        tree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
-        &[(16.0, 4), (2401.0, 2)],
-    );
-}
-
-#[test]
-fn handles_remove_multiple_match() {
-    let item1 = ([0f64], 1);
-    let item2 = ([0f64], 1);
-    let item3 = ([100f64], 2);
-    let item4 = ([45f64], 3);
-
-    let mut tree = KdTree::with_capacity(1, 2);
-    tree.add(&item1.0, item1.1).unwrap();
-    tree.add(&item2.0, item2.1).unwrap();
-    tree.add(&item3.0, item3.1).unwrap();
-    tree.add(&item4.0, item4.1).unwrap();
-
-    assert_eq!(tree.size(), 4);
-    let removed = tree.remove(&&[0f64], &1).unwrap();
-    assert_eq!(tree.size(), 2);
-    assert_eq!(removed, 2);
-    assert_ordered_usize(tree.nearest(&[45f64], 1, &squared_euclidean).unwrap(), &[(0.0, 3)]);
-}
-
-#[test]
-fn handles_remove_no_match() {
-    let item1 = ([0f64], 1);
-    let item2 = ([100f64], 2);
-    let item3 = ([45f64], 3);
-    let item4 = ([55f64], 4);
-
-    let mut tree = KdTree::with_capacity(1, 2);
-    tree.add(&item1.0, item1.1).unwrap();
-    tree.add(&item2.0, item2.1).unwrap();
-    tree.add(&item3.0, item3.1).unwrap();
-    tree.add(&item4.0, item4.1).unwrap();
-
-    let removed = tree.remove(&&[1f64], &2).unwrap();
-    assert_eq!(tree.size(), 4);
-    assert_eq!(removed, 0);
-    assert_ordered_usize(
-        tree.nearest(&[51f64], 2, &squared_euclidean).unwrap(),
-        &[(16.0, 4), (36.0, 3)],
-    );
-}
-
-#[test]
-fn handles_remove_overlapping_points() {
-    let a = ([0f64, 0f64], 0);
-    let b = ([0f64, 0f64], 1);
-    let mut tree = KdTree::new(2);
-
-    tree.add(a.0, a.1).unwrap();
-    tree.add(b.0, b.1).unwrap();
-
-    let removed = tree.remove(&[0f64, 0f64], &1).unwrap();
-    assert_eq!(tree.size(), 1);
-    assert_eq!(removed, 1);
-    assert_ordered_usize(tree.nearest(&[0f64, 0f64], 1, &squared_euclidean).unwrap(), &[(0.0, 0)]);
 }

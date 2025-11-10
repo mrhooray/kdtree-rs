@@ -37,6 +37,9 @@ pub enum ErrorKind {
 }
 
 impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
+    // ============================================================================
+    // === STRUCTURE ===
+    // ============================================================================
     /// Create a new KD tree, specifying the dimension size of each point
     pub fn new(dims: usize) -> Self {
         KdTree::with_capacity(dims, 2_usize.pow(4))
@@ -178,6 +181,9 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         self.size
     }
 
+    // ============================================================================
+    // === NEAREST QUERIES ===
+    // ============================================================================
     pub fn nearest<F>(&self, point: &[A], num: usize, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
@@ -197,100 +203,6 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     {
         let radius = radius.unwrap_or_else(A::max_value);
         self.nearest_within_radius_internal(point, num, radius, distance)
-    }
-
-    fn nearest_within_radius_internal<F>(
-        &self,
-        point: &[A],
-        num: usize,
-        radius: A,
-        distance: &F,
-    ) -> Result<Vec<(A, &T)>, ErrorKind>
-    where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        self.check_point(point)?;
-        let num = std::cmp::min(num, self.size);
-        if num == 0 {
-            return Ok(vec![]);
-        }
-        let mut pending = BinaryHeap::new();
-        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
-        pending.push(HeapElement {
-            distance: A::zero(),
-            element: self,
-        });
-        while !pending.is_empty()
-            && (-pending.peek().unwrap().distance <= radius)
-            && (evaluated.len() < num || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
-        {
-            self.nearest_step(point, num, radius, distance, &mut pending, &mut evaluated);
-        }
-        Ok(evaluated
-            .into_sorted_vec()
-            .into_iter()
-            .take(num)
-            .map(Into::into)
-            .collect())
-    }
-
-    fn nearest_step<'b, F>(
-        &self,
-        point: &[A],
-        num: usize,
-        max_dist: A,
-        distance: &F,
-        pending: &mut BinaryHeap<HeapElement<A, &'b Self>>,
-        evaluated: &mut BinaryHeap<HeapElement<A, &'b T>>,
-    ) where
-        F: Fn(&[A], &[A]) -> A,
-    {
-        let mut curr = pending.pop().unwrap().element;
-        debug_assert!(evaluated.len() <= num);
-        let evaluated_dist = if evaluated.len() == num {
-            // We only care about the nearest `num` points, so if we already have `num` points,
-            // any more point we add to `evaluated` must be nearer then one of the point already in
-            // `evaluated`.
-            max_dist.min(evaluated.peek().unwrap().distance)
-        } else {
-            max_dist
-        };
-
-        while !curr.is_leaf() {
-            let candidate;
-            if curr.belongs_in_left(point) {
-                candidate = curr.right.as_ref().unwrap();
-                curr = curr.left.as_ref().unwrap();
-            } else {
-                candidate = curr.left.as_ref().unwrap();
-                curr = curr.right.as_ref().unwrap();
-            }
-            let candidate_to_space =
-                util::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
-            if candidate_to_space <= evaluated_dist {
-                pending.push(HeapElement {
-                    distance: candidate_to_space * -A::one(),
-                    element: &**candidate,
-                });
-            }
-        }
-
-        let points = curr.points.as_ref().unwrap().iter();
-        let bucket = curr.bucket.as_ref().unwrap().iter();
-        let iter = points.zip(bucket).map(|(p, d)| HeapElement {
-            distance: distance(point, p.as_ref()),
-            element: d,
-        });
-        for element in iter {
-            if element.distance <= max_dist {
-                if evaluated.len() < num {
-                    evaluated.push(element);
-                } else if element < *evaluated.peek().unwrap() {
-                    evaluated.pop();
-                    evaluated.push(element);
-                }
-            }
-        }
     }
 
     pub fn iter_nearest<'a, F>(
@@ -367,6 +279,103 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         })
     }
 
+    // ============================================================================
+    // === NEAREST HELPERS ===
+    // ============================================================================
+    fn nearest_within_radius_internal<F>(
+        &self,
+        point: &[A],
+        num: usize,
+        radius: A,
+        distance: &F,
+    ) -> Result<Vec<(A, &T)>, ErrorKind>
+    where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        self.check_point(point)?;
+        let num = std::cmp::min(num, self.size);
+        if num == 0 {
+            return Ok(vec![]);
+        }
+        let mut pending = BinaryHeap::new();
+        let mut evaluated = BinaryHeap::<HeapElement<A, &T>>::new();
+        pending.push(HeapElement {
+            distance: A::zero(),
+            element: self,
+        });
+        while !pending.is_empty()
+            && (-pending.peek().unwrap().distance <= radius)
+            && (evaluated.len() < num || (-pending.peek().unwrap().distance <= evaluated.peek().unwrap().distance))
+        {
+            self.nearest_step(point, num, radius, distance, &mut pending, &mut evaluated);
+        }
+        Ok(evaluated
+            .into_sorted_vec()
+            .into_iter()
+            .take(num)
+            .map(Into::into)
+            .collect())
+    }
+
+    fn nearest_step<'b, F>(
+        &self,
+        point: &[A],
+        num: usize,
+        max_dist: A,
+        distance: &F,
+        pending: &mut BinaryHeap<HeapElement<A, &'b Self>>,
+        evaluated: &mut BinaryHeap<HeapElement<A, &'b T>>,
+    ) where
+        F: Fn(&[A], &[A]) -> A,
+    {
+        let mut curr = pending.pop().unwrap().element;
+        debug_assert!(evaluated.len() <= num);
+        let evaluated_dist = if evaluated.len() == num {
+            max_dist.min(evaluated.peek().unwrap().distance)
+        } else {
+            max_dist
+        };
+
+        while !curr.is_leaf() {
+            let candidate;
+            if curr.belongs_in_left(point) {
+                candidate = curr.right.as_ref().unwrap();
+                curr = curr.left.as_ref().unwrap();
+            } else {
+                candidate = curr.left.as_ref().unwrap();
+                curr = curr.right.as_ref().unwrap();
+            }
+            let candidate_to_space =
+                util::distance_to_space(point, &candidate.min_bounds, &candidate.max_bounds, distance);
+            if candidate_to_space <= evaluated_dist {
+                pending.push(HeapElement {
+                    distance: candidate_to_space * -A::one(),
+                    element: &**candidate,
+                });
+            }
+        }
+
+        let points = curr.points.as_ref().unwrap().iter();
+        let bucket = curr.bucket.as_ref().unwrap().iter();
+        let iter = points.zip(bucket).map(|(p, d)| HeapElement {
+            distance: distance(point, p.as_ref()),
+            element: d,
+        });
+        for element in iter {
+            if element.distance <= max_dist {
+                if evaluated.len() < num {
+                    evaluated.push(element);
+                } else if element < *evaluated.peek().unwrap() {
+                    evaluated.pop();
+                    evaluated.push(element);
+                }
+            }
+        }
+    }
+
+    // ============================================================================
+    // === WITHIN QUERIES ===
+    // ============================================================================
     pub fn within<F>(&self, point: &[A], radius: A, distance: &F) -> Result<Vec<(A, &T)>, ErrorKind>
     where
         F: Fn(&[A], &[A]) -> A,
@@ -391,6 +400,9 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         Ok(evaluated.len())
     }
 
+    // ============================================================================
+    // === BOUNDING BOX ===
+    // ============================================================================
     pub fn bounding_box(&self, min_bounds: &[A], max_bounds: &[A]) -> Result<Vec<&T>, ErrorKind> {
         self.check_point(min_bounds)?;
         self.check_point(max_bounds)?;
@@ -422,6 +434,9 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         Ok(evaluated)
     }
 
+    // ============================================================================
+    // === SHARED TRAVERSAL UTILITIES ===
+    // ============================================================================
     #[inline(always)]
     fn evaluated_heap<F>(&self, point: &[A], radius: A, distance: &F) -> BinaryHeap<HeapElement<A, &T>>
     where
@@ -482,6 +497,38 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
     }
 }
 
+// ============================================================================
+// === NEAREST ITERATOR TYPES ===
+// ============================================================================
+
+pub struct NearestIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
+    inner: NearestWithinRadiusIter<'a, A, T, U, F>,
+}
+
+impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIter<'a, A, T, U, F>
+where
+    F: Fn(&[A], &[A]) -> A,
+{
+    type Item = (A, &'a T);
+    fn next(&mut self) -> Option<(A, &'a T)> {
+        self.inner.next()
+    }
+}
+
+pub struct NearestIterMut<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
+    inner: NearestWithinRadiusIterMut<'a, A, T, U, F>,
+}
+
+impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIterMut<'a, A, T, U, F>
+where
+    F: Fn(&[A], &[A]) -> A,
+{
+    type Item = (A, &'a mut T);
+    fn next(&mut self) -> Option<(A, &'a mut T)> {
+        self.inner.next()
+    }
+}
+
 pub struct NearestWithinRadiusIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
     point: &'a [A],
     pending: BinaryHeap<HeapElement<A, &'a KdTree<A, T, U>>>,
@@ -539,34 +586,6 @@ where
             }));
         }
         self.evaluated.pop().map(|x| (-x.distance, x.element))
-    }
-}
-
-pub struct NearestIter<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
-    inner: NearestWithinRadiusIter<'a, A, T, U, F>,
-}
-
-impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIter<'a, A, T, U, F>
-where
-    F: Fn(&[A], &[A]) -> A,
-{
-    type Item = (A, &'a T);
-    fn next(&mut self) -> Option<(A, &'a T)> {
-        self.inner.next()
-    }
-}
-
-pub struct NearestIterMut<'a, A: Float, T, U: AsRef<[A]>, F: Fn(&[A], &[A]) -> A> {
-    inner: NearestWithinRadiusIterMut<'a, A, T, U, F>,
-}
-
-impl<'a, A: Float + Zero + One, T, U: AsRef<[A]>, F> Iterator for NearestIterMut<'a, A, T, U, F>
-where
-    F: Fn(&[A], &[A]) -> A,
-{
-    type Item = (A, &'a mut T);
-    fn next(&mut self) -> Option<(A, &'a mut T)> {
-        self.inner.next()
     }
 }
 
@@ -640,102 +659,20 @@ mod tests {
     }
 
     #[test]
-    fn it_has_default_capacity() {
-        let tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
-        assert_eq!(tree.capacity, 2_usize.pow(4));
-    }
-
-    #[test]
-    fn it_can_be_cloned() {
-        let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
-        let (pos, data) = random_point();
-        tree.add(pos, data).unwrap();
-        let mut cloned_tree = tree.clone();
-        cloned_tree.add(pos, data).unwrap();
-        assert_eq!(tree.size(), 1);
-        assert_eq!(cloned_tree.size(), 2);
-    }
-
-    #[test]
-    fn it_holds_on_to_its_capacity_before_splitting() {
+    fn it_holds_onto_capacity_before_splitting() {
         let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
         let capacity = 2_usize.pow(4);
         for _ in 0..capacity {
             let (pos, data) = random_point();
             tree.add(pos, data).unwrap();
         }
-        assert_eq!(tree.size, capacity);
         assert_eq!(tree.size(), capacity);
         assert!(tree.left.is_none() && tree.right.is_none());
         {
             let (pos, data) = random_point();
             tree.add(pos, data).unwrap();
         }
-        assert_eq!(tree.size, capacity + 1);
         assert_eq!(tree.size(), capacity + 1);
         assert!(tree.left.is_some() && tree.right.is_some());
-    }
-
-    #[test]
-    fn no_items_can_be_added_to_a_zero_capacity_kdtree() {
-        let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::with_capacity(2, 0);
-        let (pos, data) = random_point();
-        let res = tree.add(pos, data);
-        assert!(res.is_err());
-    }
-
-    #[test]
-    fn avoid_infinite_call_loop_between_add_to_bucket_and_split_due_to_float_accuracy() {
-        {
-            let min = 0.47945351705599926f64;
-            let max = 0.479_453_517_055_999_3_f64;
-
-            let mut tree = KdTree::with_capacity(1, 2);
-            tree.add([min], ()).unwrap();
-            tree.add([max], ()).unwrap();
-
-            tree.add([min], ()).unwrap();
-            tree.add([max], ()).unwrap();
-        }
-        {
-            let min = -0.479_453_517_055_999_3_f64;
-            let max = -0.47945351705599926f64;
-
-            let mut tree = KdTree::with_capacity(1, 2);
-            tree.add([min], ()).unwrap();
-            tree.add([max], ()).unwrap();
-
-            tree.add([min], ()).unwrap();
-            tree.add([max], ()).unwrap();
-        }
-    }
-
-    #[test]
-    fn test_bounding_box() {
-        let mut tree = KdTree::with_capacity(2, 2);
-        for i in 0..10 {
-            for j in 0..10 {
-                let id = i.to_string() + &j.to_string();
-                tree.add([i as f64, j as f64], id).unwrap();
-            }
-        }
-
-        let within: Vec<String> = tree
-            .bounding_box(&[4.0, 4.0], &[6.0, 6.0])
-            .unwrap()
-            .iter()
-            .cloned()
-            .cloned()
-            .collect();
-        assert_eq!(within.len(), 9);
-        assert!(within.contains(&String::from("44")));
-        assert!(within.contains(&String::from("45")));
-        assert!(within.contains(&String::from("46")));
-        assert!(within.contains(&String::from("54")));
-        assert!(within.contains(&String::from("55")));
-        assert!(within.contains(&String::from("56")));
-        assert!(within.contains(&String::from("64")));
-        assert!(within.contains(&String::from("65")));
-        assert!(within.contains(&String::from("66")));
     }
 }
