@@ -77,6 +77,5 @@ extern crate serde_derive;
 pub mod distance;
 mod heap_element;
 pub mod kdtree;
-mod util;
 pub use crate::kdtree::ErrorKind;
 pub use crate::kdtree::KdTree;
