@@ -1,4 +1,4 @@
-#[cfg(all(test, feature = "serialize"))]
+#[cfg(feature = "serialize")]
 mod serialization_tests {
     use kdtree::KdTree;
 
