@@ -2,7 +2,6 @@
 name = "kdtree"
 version = "0.8.0"
 edition = "2024"
-authors = ["Rui Hu <code@mrhooray.com>"]
 description = "K-dimensional tree in Rust for fast geospatial indexing and nearest neighbors lookup"
 readme = "README.md"
 documentation = "https://docs.rs/kdtree"
@@ -21,7 +20,7 @@ kdtree = { path = ".", features = ["serialize"] }
 rand = "0.9"
 serde = "1.0"
 serde_json = "1.0"
-criterion = "0.7"
+criterion = { version = "0.8", default-features = false }
 
 [features]
 serialize = ["serde", "serde_derive"]
