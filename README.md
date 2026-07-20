@@ -17,6 +17,16 @@ Add `kdtree` to `Cargo.toml`
 kdtree = "0.8.1"
 ```
 
+For `no_std` targets with a global allocator, disable the default `std` feature
+and enable `libm`:
+
+```toml
+[dependencies]
+kdtree = { version = "0.8", default-features = false, features = ["libm"] }
+```
+
+Add `serialize` to the feature list when Serde support is required.
+
 Add points to kdtree and query nearest n points with distance function
 
 ```rust
