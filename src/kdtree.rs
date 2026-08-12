@@ -1,4 +1,4 @@
-use std::collections::BinaryHeap;
+use alloc::{boxed::Box, collections::BinaryHeap, vec, vec::Vec};
 
 use num_traits::{Float, One, Zero};
 use thiserror::Error;
@@ -139,8 +139,8 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
 
     pub fn remove(&mut self, point: &U, data: &T) -> Result<usize, ErrorKind>
     where
-        T: std::cmp::PartialEq,
-        U: std::cmp::PartialEq,
+        T: PartialEq,
+        U: PartialEq,
     {
         let mut removed = 0;
         self.check_point(point.as_ref())?;
@@ -292,7 +292,7 @@ impl<A: Float + Zero + One, T, U: AsRef<[A]>> KdTree<A, T, U> {
         F: Fn(&[A], &[A]) -> A,
     {
         self.check_point(point)?;
-        let num = std::cmp::min(num, self.size);
+        let num = core::cmp::min(num, self.size);
         if num == 0 {
             return Ok(vec![]);
         }
@@ -677,25 +677,24 @@ where
 
 #[cfg(test)]
 mod tests {
-    extern crate rand;
     use super::KdTree;
 
-    fn random_point() -> ([f64; 2], i32) {
-        rand::random::<([f64; 2], i32)>()
+    fn point(index: usize) -> ([f64; 2], i32) {
+        ([index as f64, (index * index) as f64], index as i32)
     }
 
     #[test]
     fn it_holds_onto_capacity_before_splitting() {
         let mut tree: KdTree<f64, i32, [f64; 2]> = KdTree::new(2);
         let capacity = 2_usize.pow(4);
-        for _ in 0..capacity {
-            let (pos, data) = random_point();
+        for index in 0..capacity {
+            let (pos, data) = point(index);
             tree.add(pos, data).unwrap();
         }
         assert_eq!(tree.size(), capacity);
         assert!(tree.left.is_none() && tree.right.is_none());
         {
-            let (pos, data) = random_point();
+            let (pos, data) = point(capacity);
             tree.add(pos, data).unwrap();
         }
         assert_eq!(tree.size(), capacity + 1);

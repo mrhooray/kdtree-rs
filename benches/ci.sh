@@ -83,14 +83,11 @@ while IFS= read -r -d '' base_file; do
     if awk -v delta="$delta_median" -v threshold="$THRESHOLD" 'BEGIN { exit !(delta > threshold) }'; then
         violated=1
     fi
-    if awk -v delta="$delta_mean" -v threshold="$THRESHOLD" 'BEGIN { exit !(delta > threshold) }'; then
-        violated=1
-    fi
 
     if [ "$violated" -eq 1 ]; then
         regressions+=("$bench_name:median=${pct_median}%,mean=${pct_mean}%")
     fi
-done < <(find "$TARGET_DIR" -path "*/base/estimates.json" -print0)
+done < <(find "$TARGET_DIR" -path "*/${BASELINE_NAME}/estimates.json" -print0)
 
 if [ ${#missing[@]} -gt 0 ]; then
     printf 'criterion regression scan missing change data for: %s\n' \

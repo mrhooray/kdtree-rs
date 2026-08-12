@@ -1,5 +1,5 @@
+use core::cmp::Ordering;
 use num_traits::Float;
-use std::cmp::Ordering;
 
 pub struct HeapElement<A, T> {
     pub distance: A,

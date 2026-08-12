@@ -2,6 +2,7 @@
 //! euclidean distance which is no more than the square root of the sum of the
 //! squares of the distances in each dimension.
 
+use core::ops::Add;
 use num_traits::Float;
 
 /// Returns the squared euclidean distance between two points. When you only
@@ -34,5 +35,5 @@ pub fn squared_euclidean<T: Float>(a: &[T], b: &[T]) -> T {
     a.iter()
         .zip(b.iter())
         .map(|(x, y)| ((*x) - (*y)) * ((*x) - (*y)))
-        .fold(T::zero(), ::std::ops::Add::add)
+        .fold(T::zero(), Add::add)
 }

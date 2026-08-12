@@ -70,12 +70,22 @@
 //! deterministic order. Use `bounding_box` for axis-aligned range queries when you
 //! only need raw `&T` references without ordering guarantees.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+#[cfg(not(any(feature = "std", feature = "libm")))]
+compile_error!("either the `std` or `libm` feature must be enabled");
+
 #[cfg(feature = "serialize")]
 #[cfg_attr(feature = "serialize", macro_use)]
 extern crate serde_derive;
 
+#[cfg(any(feature = "std", feature = "libm"))]
 pub mod distance;
+#[cfg(any(feature = "std", feature = "libm"))]
 mod heap_element;
+#[cfg(any(feature = "std", feature = "libm"))]
 pub mod kdtree;
-pub use crate::kdtree::ErrorKind;
-pub use crate::kdtree::KdTree;
+#[cfg(any(feature = "std", feature = "libm"))]
+pub use crate::kdtree::{ErrorKind, KdTree};

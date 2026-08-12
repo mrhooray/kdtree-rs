@@ -6,9 +6,11 @@ use kdtree::KdTree;
 use kdtree::distance::squared_euclidean;
 use std::collections::BTreeSet;
 
-fn deterministic_points(len: usize) -> (Vec<([f64; 3], f64)>, ([f64; 3], f64)) {
+type Point3 = ([f64; 3], f64);
+
+fn deterministic_points(len: usize) -> (Vec<Point3>, Point3) {
     fn next(state: &mut u64) -> f64 {
-        *state = state.wrapping_mul(636_413_622_384_679_3005).wrapping_add(1);
+        *state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
         ((*state >> 11) as f64) / ((1u64 << 53) as f64)
     }
 
